@@ -16,7 +16,7 @@ const route = useRoute(); // Ottieni la rotta attuale
         <div class="sidebar-brand-icon rotate-n-15">
           <i class="bi bi-bus-front-fill" style="color: white;"></i>
         </div>
-        <div class="sidebar-brand-text mx-3">La Imnaculada</div>
+        <div class="sidebar-brand-text mx-3">La Inmaculada</div>
       </a>
 
       <!-- Divider -->
@@ -86,12 +86,12 @@ const route = useRoute(); // Ottieni la rotta attuale
       <li class="nav-item">
         <RouterLink to="/corse">
           <a class="nav-link" href="tables.html">
-            <i class="fas fa-fw fa-clock"></i>
-            <span>{{ $t("corse") }}</span></a>
+            <i class="fas fa-fw fa-table"></i>
+            <span>{{ $t("service") }}</span></a>
         </RouterLink>
       </li>
 
-
+<!--
       <li class="nav-item">
         <RouterLink to="/assegnazioni">
           <a class="nav-link" href="tables.html">
@@ -99,7 +99,7 @@ const route = useRoute(); // Ottieni la rotta attuale
             <span>{{ $t("assegnazioni") }}</span></a>
         </RouterLink>
       </li>
-
+-->
       <!-- Divider -->
       <hr class="sidebar-divider d-none d-md-block">
 

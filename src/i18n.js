@@ -73,8 +73,10 @@ const messages = {
     //fine
 
     inviaTurni: 'send shifts',
-    oggi: 'of today',
-    domani: 'of tomorrow',
+    oggi: 'today',
+    domani: 'tomorrow',
+    dioggi: 'de hoy',
+    didomani: 'de mañana',
     email: 'email',
     whatsapp: 'whatsapp',
     VeicoliScadenza: 'Vehicles with expiring insurance',
@@ -111,7 +113,10 @@ const messages = {
     notification: "Notifica",
     turnioggi :"Corse di domani",
     turniDomani :"Corse di domani",
-  
+    service :"Service",
+    autista :"conductores",
+    tratta: "Tratta ",
+    FiltraData:"Filtra per data",
   },
   it: {
     addAssignment: 'Aggiungi Assegnazione',
@@ -181,8 +186,10 @@ const messages = {
     autisti: 'autisti',
     inviaTurni: 'invia turni',
     //fine 
-    oggi: 'di oggi',
-    domani: 'di domani',
+    oggi: 'oggi',
+    domani: 'domani',
+    dioggi: 'de hoy',
+    didomani: 'de mañana',
     email: 'email',
     whatsapp: 'whatsapp',
     VeicoliScadenza: 'Veicoli con assicurazione in scadenza',
@@ -218,7 +225,10 @@ const messages = {
     notification: "Notifica",
     turnioggi :"Corse di domani",
     turniDomani :"Corse di domani",
-  
+    service :"Service",
+    autista :"Autista",
+    tratta: "Service ",
+    FiltraData:"Filtra per data",
   },
   es: {
     addAssignment: 'Agregar Asignación',
@@ -288,8 +298,10 @@ const messages = {
     autisti: 'conductores',
     //fine
     inviaTurni: 'enviar turnos',
-    oggi: 'de hoy',
-    domani: 'de mañana',
+    oggi: 'hoy',
+    domani: 'mañana',
+    dioggi: 'de hoy',
+    didomani: 'de mañana',
     email: 'correo electrónico',
     whatsapp: 'whatsapp',
     VeicoliScadenza: 'Vehículos con seguro próximo a vencer',
@@ -326,7 +338,11 @@ const messages = {
 
     turnioggi :"Turnos de hoy",
     turniDomani :"Turnos de mañana",
-    calendar:"Calendar"
+    calendar:"Calendar",
+    service :"Service",
+    autista :"Conductores",
+    tratta: "Service ",
+    FiltraData:"Filtra per data",
   }
 };
 

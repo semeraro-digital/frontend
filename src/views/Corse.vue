@@ -1,58 +1,58 @@
 <script setup>
-import moment from "moment";
-import axios from "axios";
-import { onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
+  import moment from "moment";
+  import axios from "axios";
+  import {onMounted, ref} from "vue";
+  import {useI18n} from "vue-i18n";
 
-const { t } = useI18n();
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const corse = ref([]);
-const error = ref(null);
-const isLoading = ref(false);
-const isAddingRow = ref(false);
-const autisti = ref([]);
-const tratte = ref([]);
-const mezzi = ref([]);
+  const {t} = useI18n();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const corse = ref([]);
+  const error = ref(null);
 
-// Funzione per ottenere la data odierna in formato YYYY-MM-DD
-const getTodayDate = () => {
-  const today = new Date();
-  return today.toISOString().split("T")[0]; // Restituisce la data nel formato corretto
-};
+  const isAddingRow = ref(false);
+  const isLoading = ref(false);
 
-const newCorsa = ref({
-  datapartenza: getTodayDate(), // Precompila con la data di oggi
-  orapartenza: "",
-  idtratta: "",
-  idAutista: "",
-  idMezzo: "",
-  tutor: "",
-});
 
-// Funzione per formattare la data
-function formatDate(dateString) {
-  return moment(dateString).format("DD/MM/YYYY");
-}
-// Funzione per gestire il cambio della data
+  // Funzione per ottenere la data odierna in formato YYYY-MM-DD
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0]; // Restituisce la data nel formato corretto
+  };
 
-// Funzione per formattare l'ora
-function formatTime(dateString) {
-  return moment(dateString).format("HH:mm");
-}
+  const newCorsa = ref({
+    datapartenza: getTodayDate(),
+    orapartenza: "",
+    tratta: {},
+    autista: {},
+    mezzo:  {},
+    tutor: "",
+  });
 
-// Funzione per caricare le corse all'avvio
-onMounted(() => {
-  loadCorse();
-  loadAutisti();
-  loadTratte();
-  loadVeicoli();
-});
+  // Funzione per formattare la data
+  function formatDate(dateString) {
+    return moment(dateString).format("DD/MM/YYYY");
+  }
+
+  // Funzione per gestire il cambio della data
+
+  // Funzione per formattare l'ora
+  function formatTime(dateString) {
+    return moment(dateString).format("HH:mm");
+  }
+
+  // Funzione per caricare le corse all'avvio
+  onMounted(() => {
+    loadCorse();
+    loadVeicoli();
+    loadTratte();
+    loadAutisti();
+  });
 
 // Carica le corse dal server
 const loadCorse = async () => {
   try {
     isLoading.value = true;
-    const response = await axios.get(`${API_BASE_URL}/corse`);
+    const response = await axios.get(`${API_BASE_URL}/assegnazioni`);
     corse.value = response.data;
   } catch (err) {
     error.value = err.response ? err.response.data.message : err.message;
@@ -60,42 +60,17 @@ const loadCorse = async () => {
     isLoading.value = false;
   }
 };
-
-//AUTISTI
-// Variabili per la ricerca con autocompletamento
-const searchAutista = ref(""); 
-const filteredAutisti = ref([]);
-const showAutistiOptions = ref(false);
-// Filtra gli autisti in base al testo di ricerca
-const filterAutisti = () => {
-  filteredAutisti.value = autisti.value.filter((autista) =>
-    `${autista.nome} ${autista.cognome}`
-      .toLowerCase()
-      .includes(searchAutista.value.toLowerCase())
-  );
-};
-
-// Seleziona un autista e chiudi le opzioni
-const selectAutista = (autista) => {
-  newCorsa.value.idAutista = autista.id;
-  searchAutista.value = `${autista.nome} ${autista.cognome}`;
-  showAutistiOptions.value = false;
-};
-
-// Carica gli autisti dal server
-const loadAutisti = async () => {
+const loadVeicoli = async () => {
   try {
     isLoading.value = true;
-    const response = await axios.get(`${API_BASE_URL}/autisti`);
-    autisti.value = response.data;
+    const response = await axios.get(`${API_BASE_URL}/veicoli`);
+    veicoli.value = response.data;
   } catch (err) {
     error.value = err.response ? err.response.data.message : err.message;
   } finally {
     isLoading.value = false;
   }
 };
-
-// Carica le tratte dal server
 const loadTratte = async () => {
   try {
     isLoading.value = true;
@@ -107,11 +82,12 @@ const loadTratte = async () => {
     isLoading.value = false;
   }
 };
-const loadVeicoli = async () => {
+const loadAutisti = async () => {
   try {
     isLoading.value = true;
-    const response = await axios.get(`${API_BASE_URL}/veicoli`);
-    mezzi.value = response.data;
+    const response = await axios.get(`${API_BASE_URL}/autisti`);
+    autisti.value = response.data;
+    autisti.value.forEach(elem => elem.fullName = elem.nome + ' ' + elem.cognome);
   } catch (err) {
     error.value = err.response ? err.response.data.message : err.message;
   } finally {
@@ -119,65 +95,100 @@ const loadVeicoli = async () => {
   }
 };
 
-// Funzione per eliminare una corsa
-const eliminaCorsa = async (id) => {
-  if (confirm(t("confirmDelete"))) {
+  // Veicoli
+  const searchVeicoli = ref({});
+  const veicoli = ref([]);
+
+  // Tratte
+  const searchTratte = ref({});
+  const tratte = ref([]);
+
+  // Autisti
+  const searchAutisti = ref({});
+  const autisti = ref([]);
+
+
+  // Funzione per eliminare una corsa
+  const eliminaCorsa = async (id) => {
+    if (confirm(t("confirmDelete"))) {
+      try {
+        await axios.delete(`${API_BASE_URL}/corse/corsaAssegnazione/${id}`);
+        //corse.value = corse.value.filter((corsa) => corsa.id !== id);
+
+        // Reload assignments
+        await loadCorse();
+      } catch (err) {
+        error.value = err.response ? err.response.data.message : err.message;
+      }
+    }
+  };
+
+  // Mostra la riga di inserimento
+  const openAddRowModal = () => {
+    isAddingRow.value = true;
+  };
+
+  // Nascondi la riga di inserimento
+  const cancelAddRow = () => {
+    isAddingRow.value = false;
+    resetNewCorsa();
+  };
+
+  // Aggiungi una nuova corsa
+  const aggiungiCorsa = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}/corse/${id}`);
-      corse.value = corse.value.filter((corsa) => corsa.id !== id);
+      const request = JSON.parse(JSON.stringify(newCorsa.value));
+      request.datapartenza = moment(request.datapartenza).hours(request.orapartenza.hours).minutes(request.orapartenza.minutes).format();
+      request.dataarrivo = request.datapartenza;
+      request.idAutista = request.autista.id;
+      request.idMezzo = request.mezzo.id;
+      request.idTratta = request.tratta.id;
+      delete request.mezzo;
+      delete request.autista;
+      delete request.tratta;
+      delete request.orapartenza;
+      console.log(request);
+      // return;
+      const response = await axios.post(`${API_BASE_URL}/assegnazioni/aggiungi`, request);
+
+      // request.id = response.data;
+      // corse.value.push(request); // Aggiungi la nuova corsa alla tabella
+      isAddingRow.value = false; // Nascondi la riga di inserimento
+      resetNewCorsa(); // Resetta i campi del form
+      // Reload assignments
+      await loadCorse();
     } catch (err) {
+      console.log(err);
       error.value = err.response ? err.response.data.message : err.message;
     }
-  }
-};
-
-// Mostra la riga di inserimento
-const openAddRowModal = () => {
-  isAddingRow.value = true;
-};
-
-// Nascondi la riga di inserimento
-const cancelAddRow = () => {
-  isAddingRow.value = false;
-  resetNewCorsa();
-};
-
-// Aggiungi una nuova corsa
-const aggiungiCorsa = async () => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/corse`, newCorsa.value);
-    corse.value.push(response.data); // Aggiungi la nuova corsa alla tabella
-    isAddingRow.value = false; // Nascondi la riga di inserimento
-    resetNewCorsa(); // Resetta i campi del form
-  } catch (err) {
-    error.value = err.response ? err.response.data.message : err.message;
-  }
-};
-
-// Reset dei campi di newCorsa
-const resetNewCorsa = () => {
-  newCorsa.value = {
-    descrizione: "",
-    datapartenza: getTodayDate(), // Reimposta la data a oggi
-    orapartenza: "", // Resetta anche l'ora di partenza
-    idtratta: "",
-    idAutista: "",
-    tutor: "",
-    idMezzo: "",
   };
-};
+
+  // Reset dei campi di newCorsa
+  const resetNewCorsa = () => {
+    newCorsa.value = {
+      datapartenza: getTodayDate(),
+      orapartenza: "",
+      tratta: {},
+      autista: {},
+      mezzo:  {},
+      tutor: "",
+    };
+    searchVeicoli.value = "";
+    searchTratte.value = "";
+    searchAutisti.value = "";
+  };
 </script>
 
 <template>
   <div class="container-fluid">
     <!-- Messaggio di errore globale -->
     <div
-      v-if="error"
-      class="alert alert-danger text-center"
-      role="alert"
-      style="margin-top: 20px"
+        v-if="error"
+        class="alert alert-danger text-center"
+        role="alert"
+        style="margin-top: 20px"
     >
-      {{ $t("errorLoadingData", { error }) }}
+      {{ $t("errorLoadingData", {error}) }}
     </div>
 
     <!-- Spinner di caricamento -->
@@ -190,116 +201,119 @@ const resetNewCorsa = () => {
 
     <div class="row">
       <div class="col">
-        <div v-if="!error && !isLoading" class="table-responsive">
-          <table class="table table-sm custom-table" style="margin-top: 20px">
+        <div v-if="!error && !isLoading">
+          <table class="table table-striped table-sm custom-table" style="margin-top: 20px">
             <thead class="thead-light">
-              <tr>
-                <th scope="col">Data partenza</th>
-                <th scope="col">Ora partenza</th>
-                <th scope="col">Descrizione</th>
-                <th scope="col">Tutor</th>
-                <th scope="col">{{ $t("driver") }}</th>
-                <th scope="col">{{ $t("vehicle") }}</th>
-                <th scope="col">
-                  <!-- Pulsante "+" per aggiungere una nuova riga -->
-                  <button @click="openAddRowModal" class="btn btn-sm btn-primary">
-                    +
-                  </button>
-                </th>
-              </tr>
+            <tr>
+              <th scope="col">Data partenza</th>
+              <th scope="col">Ora partenza</th>
+              <th scope="col">Descrizione</th>
+              <th scope="col">Tutor</th>
+              <th scope="col">{{ $t("driver") }}</th>
+              <th scope="col">{{ $t("vehicle") }}</th>
+              <th scope="col" class="text-right">
+                <!-- Pulsante "+" per aggiungere una nuova riga -->
+                <button @click="openAddRowModal" class="btn btn-sm btn-primary">
+                  <i class="fa fa-plus"></i>
+                </button>
+              </th>
+            </tr>
             </thead>
             <tbody>
-              <tr v-if="corse.length === 0">
-                <td class="text-center" colspan="6">{{ t("noCoursesAvailable") }}</td>
-              </tr>
-              <tr v-for="item in corse" :key="item.id">
-                <td>{{ formatDate(item.datapartenza) }}</td>
-                <td>{{ formatTime(item.datapartenza) }}</td>
-                <td>{{ item.descrizione }}</td>
-                <td>{{ item.tutor }}</td>
-                <td>{{ item.nome }} {{ item.cognome }}</td>
-                <td>{{ item.idMezzo }}</td>
-                <td>
-                  <button @click="eliminaCorsa(item.id)" class="btn btn-sm btn-danger">
-                    {{ t("delete") }}
-                  </button>
-                </td>
-              </tr>
-              <!-- Riga per l'inserimento della nuova corsa -->
-              <tr v-if="isAddingRow">
-                <td>
-                  <input
+            <tr v-if="corse.length === 0">
+              <td class="text-center" colspan="6">{{ t("noCoursesAvailable") }}</td>
+            </tr>
+            <tr v-for="item in corse" :key="item.id">
+              <td>{{ formatDate(item.datapartenza) }}</td>
+              <td>{{ formatTime(item.datapartenza) }}</td>
+              <td>{{ item.descrizionetratta }}</td>
+              <td>{{ item.tutor }}</td>
+              <td>{{ item.nomeautista }} {{ item.cognomeautista }}</td>
+              <td>{{ item.modelloveicolo }}</td>
+              <td class="text-right">
+                <button
+                    @click="eliminaCorsa(item.idcorsa)"
+                    class="btn btn-sm btn-danger"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+            <!-- Riga per l'inserimento della nuova corsa -->
+            <tr v-if="isAddingRow">
+              <td>
+                <VueDatePicker
+                    id="data"
+                    :enable-time-picker="false"
+                    auto-apply
+                    text-input
+                    format="dd/MM/yyyy"
                     v-model="newCorsa.datapartenza"
-                    type="date"
-                    class="form-control"
-                  />
-                </td>
-                <td>
-                  <input
+                    locale="it"
+                ></VueDatePicker>
+              </td>
+              <td>
+                <VueDatePicker
+                    id="ora"
+                    time-picker
+                    text-input
+                    :hours-increment="1"
+                    :minutes-increment="5"
+                    :minutes-grid-increment="5"
+                    format="HH:mm"
                     v-model="newCorsa.orapartenza"
-                    type="time"
-                    class="form-control"
-                  />
-                </td>
-                <td>
-                  <select
-                    class="form-select"
-                    id="idTratta"
-                    v-model="newCorsa.idtratta"
-                    aria-label="Seleziona una tratta"
-                  >
-                    <option v-for="tratta in tratte" :key="tratta.id" :value="tratta.id">
-                      {{ tratta.descrizione }}
-                    </option>
-                  </select>
-                </td>
-                <td>
-                  <input
+                    locale="it"
+                    :select-text="$t('assign')"
+                    :cancel-text="$t('cancel')"
+                ></VueDatePicker>
+              </td>
+
+
+              <!-- Autocompletamento Tratte -->
+              <td>
+                <TypeAhead
+                    id="tratte"
+                    :items="tratte"
+                    v-model="newCorsa.tratta"
+                    :itemProjection="(item) => item.descrizione"
+                    :allow-new="true"
+                />
+              </td>
+              <td>
+                <input
                     v-model="newCorsa.tutor"
                     class="form-control"
                     placeholder="Tutor"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    v-model="searchAutista"
-                    @focus="showAutistiOptions = true"
-                    @input="filterAutisti"
-                    placeholder="Seleziona un autista"
-                    class="form-control"
-                  />
-                  <!-- Opzioni di autocompletamento -->
-                  <ul v-if="showAutistiOptions" class="autocomplete-options">
-                    <li
-                      v-for="autista in filteredAutisti"
-                      :key="autista.id"
-                      @click="selectAutista(autista)"
-                      class="autocomplete-item"
-                    >
-                      {{ autista.nome }} {{ autista.cognome }}
-                    </li>
-                  </ul>
-                </td>
-                <td>
-                  <select
-                    class="form-select"
-                    id="idmezzo"
-                    v-model="newCorsa.idMezzo"
-                    aria-label="Seleziona un mezzo"
-                  >
-                    <option v-for="mezzo in mezzi" :key="mezzo.id" :value="mezzo.id">
-                      {{ mezzo.modello }}
-                    </option>
-                  </select>
-                </td>
-                <td>
-                  <button @click="aggiungiCorsa" class="btn btn-sm btn-success">✔</button>
-                  <button @click="cancelAddRow" class="btn btn-sm btn-secondary">
-                    ✖
-                  </button>
-                </td>
-              </tr>
+                />
+              </td>
+              <td>
+                <TypeAhead
+                    id="autisti"
+                    :items="autisti"
+                    v-model="newCorsa.autista"
+                    :itemProjection="(item) => item.fullName"
+                    :allow-new="true"
+                />
+              </td>
+              <!-- Autocompletamento Veicoli -->
+              <td>
+                <TypeAhead
+                    id="veicoli"
+                    :items="veicoli"
+                    v-model="newCorsa.mezzo"
+                    :itemProjection="(item) => item.modello"
+                    :allow-new="true"
+                />
+              </td>
+              <td style="width: 100px" class="text-right">
+                <button @click="cancelAddRow" class="btn btn-sm btn-secondary mr-1">
+                  <i class="fas fa-times"></i>
+                </button>
+                <button @click="aggiungiCorsa" class="btn btn-sm btn-success">
+                  <i class="fas fa-check"></i>
+                </button>
+              </td>
+            </tr>
             </tbody>
           </table>
         </div>
@@ -312,9 +326,11 @@ const resetNewCorsa = () => {
 .container-fluid {
   margin-top: 20px;
 }
+
 .custom-table {
   margin-top: 20px;
 }
+
 .autocomplete-options {
   position: absolute;
   background-color: white;

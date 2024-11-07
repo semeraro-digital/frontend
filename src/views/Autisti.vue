@@ -215,13 +215,15 @@ async function saveAutista() {
                     <label for="scadenzaPatente" class="form-label">{{
                       $t("driverLicenseExpiry")
                     }}</label>
-                    <input
-                      type="date"
-                      id="scadenzaPatente"
-                      v-model="newAutista.scadenzaPatente"
-                      class="form-control"
-                      required
-                    />
+                    <VueDatePicker
+                        id="scadenzaPatente"
+                        :enable-time-picker="false"
+                        auto-apply
+                        text-input
+                        format="dd/MM/yyyy"
+                        v-model="newAutista.scadenzaPatente"
+                        locale="it"
+                    ></VueDatePicker>
                   </div>
                 </div>
                 <div class="col-6">

@@ -19,6 +19,7 @@
     "@event-calendar/time-grid": "^3.6.1",
     "@popperjs/core": "^2.11.8",
     "@vueform/multiselect": "^2.6.10",
+    "@vuepic/vue-datepicker": "^10.0.0",
     "axios": "^1.7.7",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
@@ -35,6 +36,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",
-    "vite": "^5.3.1"
+    "vite": "^5.3.1",
+      "vue3-bootstrap-typeahead": "^1.0.0"
   }
 }

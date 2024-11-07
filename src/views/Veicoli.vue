@@ -25,7 +25,7 @@ let detailModal;
 onMounted(() => {
   addVehicleModal = new Modal('#addVehicleModal');
   detailModal = new Modal('#myModal');
-  
+
   veicoli.value.splice(0);
   axios.get('https://gestioneautistibe.onrender.com/veicoli')
       .then(response => {
@@ -163,11 +163,27 @@ async function eliminaVeicolo(id) {
               </div>
               <div class="mb-3">
                 <label for="scadenzaBollo" class="form-label">{{ t('taxDeadline') }}</label>
-                <input type="date" id="scadenzaBollo" v-model="newVeicolo.scadenzaBollo" class="form-control" required/>
+                <VueDatePicker
+                    id="scadenzaBollo"
+                    :enable-time-picker="false"
+                    auto-apply
+                    text-input
+                    format="dd/MM/yyyy"
+                    v-model="newVeicolo.scadenzaBollo"
+                    locale="it"
+                ></VueDatePicker>
               </div>
               <div class="mb-3">
                 <label for="scadenzaAssicurazione" class="form-label">{{ t('insuranceDeadline') }}</label>
-                <input type="date" id="scadenzaAssicurazione" v-model="newVeicolo.scadenzaAssicurazione" class="form-control" required/>
+                <VueDatePicker
+                    id="scadenzaAssicurazione"
+                    :enable-time-picker="false"
+                    auto-apply
+                    text-input
+                    format="dd/MM/yyyy"
+                    v-model="newVeicolo.scadenzaAssicurazione"
+                    locale="it"
+                ></VueDatePicker>
               </div>
             </div>
             <div class="modal-footer">
