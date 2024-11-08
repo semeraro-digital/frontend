@@ -84,7 +84,7 @@ const router = createRouter({
         {
             path: '/corseAll',
             name: 'corseAll',
-            component: () => import('../views/corseAll.vue')
+            component: () => import('../views/CorseAll.vue')
         },
     ]
 });
