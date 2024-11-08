@@ -5,6 +5,8 @@
   import {useRoute, useRouter} from 'vue-router';
   import {Modal} from 'bootstrap';
   import moment from 'moment';
+// Importa la variabile API_BASE_URL dall'ambiente
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Assicurati che questa variabile sia definita nel file .env
 
   const route = useRoute();
   const router = useRouter();
