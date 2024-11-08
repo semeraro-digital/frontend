@@ -158,7 +158,6 @@ const aggiungiCorsa = async () => {
     delete request.autista;
     delete request.tratta;
     delete request.orapartenza;
-    console.log(request);
     // return;
     const response = await axios.post(`${API_BASE_URL}/assegnazioni/aggiungi`, request);
 

@@ -24,9 +24,11 @@ const route = useRoute(); // Ottieni la rotta attuale
 
       <!-- Nav Item - Dashboard -->
       <li class="nav-item active">
-        <a class="nav-link" href="/dashboard">
+        <RouterLink to="/dashboard">
+        <a class="nav-link">
           <i class="fas fa-fw fa-tachometer-alt"></i>
           <span>Dashboard</span></a>
+        </RouterLink>
       </li>
 
       <!-- Divider -->
@@ -40,7 +42,7 @@ const route = useRoute(); // Ottieni la rotta attuale
       <!-- Nav Item - Autisti -->
       <li class="nav-item">
         <RouterLink to="/autisti">
-          <a class="nav-link" href="autisti">
+          <a class="nav-link">
             <i class="fas fa-fw fa-users"></i>
             <span> {{ $t("autisti") }}</span></a>
         </RouterLink>
@@ -49,7 +51,7 @@ const route = useRoute(); // Ottieni la rotta attuale
       <!-- Nav Item - calendar -->
       <li class="nav-item">
         <RouterLink to="/">
-          <a class="nav-link" href="calendar">
+          <a class="nav-link">
             <i class="fas fa-fw fa-calendar"></i>
             <span>  {{ $t("calendar") }}</span></a>
         </RouterLink>
@@ -58,7 +60,7 @@ const route = useRoute(); // Ottieni la rotta attuale
             <!-- Nav Item - Tratte -->
             <li class="nav-item">
         <RouterLink to="/tratte">
-          <a class="nav-link" href="tratte">
+          <a class="nav-link">
             <i class="fas fa-fw fa-route"></i>
             <span> {{ $t("tratte") }}</span></a>
         </RouterLink>
@@ -67,7 +69,7 @@ const route = useRoute(); // Ottieni la rotta attuale
       <!-- Nav Item - Autisti -->
       <li class="nav-item">
         <RouterLink to="/veicoli">
-          <a class="nav-link" href="veicoli">
+          <a class="nav-link">
             <i class="fas fa-fw fa-car"></i>
             <span>{{ $t("veicoli") }}</span></a>
         </RouterLink>

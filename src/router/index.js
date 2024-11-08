@@ -62,7 +62,6 @@ const router = createRouter({
             name: 'dettaglio',
             component: () => import('../views/DettaglioAutisti.vue'),
             beforeEnter:(to,from) => {
-                console.log(to.params.id)
             }
 
         },
@@ -84,7 +83,7 @@ const router = createRouter({
         {
             path: '/corseAll',
             name: 'corseAll',
-            component: () => import('../views/CorseAll.vue')
+            component: () => import('../views/corseAll.vue')
         },
     ]
 });

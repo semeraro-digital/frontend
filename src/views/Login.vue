@@ -8,8 +8,8 @@
         </div>
         <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
           <form @submit.prevent="handleLogin">
-  
-         
+
+
 
             <!-- Username input -->
             <div class="form-outline mb-4">
@@ -78,7 +78,7 @@
 
 <script>
 import axios from 'axios';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default {
   data() {
     return {
@@ -99,9 +99,9 @@ export default {
           password: this.password,
         });
 
-        const token = response.data.token; 
-        localStorage.setItem('token', token); 
-        this.$router.push('/'); 
+        const token = response.data.token;
+        localStorage.setItem('token', token);
+        this.$router.push('/');
       } catch (err) {
         this.error = err.response ? err.response.data.message : 'Login fallito. Riprova.';
         console.error('Login error:', err);

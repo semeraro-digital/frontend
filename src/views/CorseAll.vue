@@ -70,7 +70,6 @@ const filtraCorse = () => {
     // Filtraggio per range di date
     const matchDataPartenza = (!filtroDataInizio.value || corsaData.isSameOrAfter(filtroDataInizio.value)) &&
                               (!filtroDataFine.value || corsaData.isSameOrBefore(filtroDataFine.value));
-console.log(matchDataPartenza);
     const matchTutor = !filtroTutor.value || (corsa.tutor && corsa.tutor.toLowerCase().includes(filtroTutor.value.toLowerCase()));
     const matchAutista = !filtroAutista.value || `${corsa.nomeautista} ${corsa.cognomeautista}`.toLowerCase().includes(filtroAutista.value.toLowerCase());
     const matchVeicolo = !filtroVeicolo.value || (corsa.modelloveicolo && corsa.modelloveicolo.toLowerCase().includes(filtroVeicolo.value.toLowerCase()));
@@ -86,11 +85,9 @@ const totalePagine = computed(() => {
 
 // Funzione per ottenere le corse della pagina corrente
 const corsePaginazione = computed(() => {
-  console.log("corsePaginazione");
   const inizio = (paginaCorrente.value - 1) * corsePerPagina;
   const fine = inizio + corsePerPagina;
 const returnObj =filtraCorse().slice(inizio, fine);
-console.log("ret "+returnObj.length);
   return returnObj;
 });
 
@@ -156,7 +153,7 @@ const vaiAllaPagina = (pagina) => {
                 <th scope="col">{{ $t("driver") }}</th>
                 <th scope="col">{{ $t("vehicle") }}</th>
                 <th scope="col" class="text-right">
-             
+
                 </th>
               </tr>
             </thead>

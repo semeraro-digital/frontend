@@ -29,7 +29,6 @@ async function eliminaAssegnazione(id) {
     try {
       // Send DELETE request to remove the assignment
       await axios.delete(`${API_BASE_URL}/assegnazioni/${id}`);
-      console.log('Assegnazione eliminata:', id);
       // Reload assignments to reflect changes
       await loadAssegnazioni();
     } catch (err) {
@@ -64,7 +63,6 @@ async function aggiungi() {
       `${API_BASE_URL}/assegnazioni`,
       newAssegnazione.value
     );
-    console.log("Assegnazione aggiunta:", response.data);
 
     // Hide modal after successful insertion
     const modalElement = document.getElementById("addAssegnazioneModal");

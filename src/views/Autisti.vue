@@ -41,7 +41,6 @@ function openAddAutistaModal() {
       return;
     }
     const modal = Modal.getOrCreateInstance(modalElement);
-    console.log("Opening 'Add Autista' modal");
     modal.show();
   } catch (error) {
     console.error("Errore nell'apertura della modale:", error);
@@ -51,7 +50,6 @@ function openAddAutistaModal() {
 async function saveAutista() {
   try {
     const response = await axios.post(`${API_BASE_URL}/autisti/add`, newAutista.value); // Usa la variabile API_BASE_URL
-    console.log("Autista aggiunto:", response.data);
 
     const modalElement = document.getElementById("addAutistaModal");
     const modal = Modal.getInstance(modalElement);

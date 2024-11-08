@@ -42,20 +42,16 @@ export default {
     });
   },
   methods: {
-      formatData(data) {
-      return format(new Date(data), 'dd/MM/yyyy HH:mm', { locale: it });
+    formatData(data) {
+      return moment(data).format('dd/MM/yyyy HH:mm');
     },
     fetchAutisti() {
       axios
         .get(`${API_BASE_URL}/autisti`)
         .then((response) => {
-          console.log(response.data);
-          console.log("filter date" + moment());
           const filterDate = moment();
           this.autisti = _.filter(response.data, (o) => {
             const dataScadenzaAggiornata = moment(o.scadenzapatente).add(60, "days");
-            console.log("data aggiornata: " + dataScadenzaAggiornata);
-            console.log("Response" + dataScadenzaAggiornata.isBefore(filterDate));
             return dataScadenzaAggiornata.isAfter(filterDate);
           });
         })
@@ -103,7 +99,6 @@ export default {
             }
           });
 
-          console.log(response.data);
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -146,7 +141,6 @@ export default {
             }
           });
 
-          console.log(response.data);
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -193,7 +187,6 @@ export default {
             }
           });
 
-          console.log(response.data);
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -236,7 +229,6 @@ export default {
             }
           });
 
-          console.log(response.data);
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -261,7 +253,6 @@ export default {
       axios
         .post(`${API_BASE_URL}/autisti`, this.turniData)
         .then((response) => {
-          console.log(response.data);
           this.autisti = response.data;
           const modalElement = document.getElementById("exampleModal");
           const modal = Modal.getInstance(modalElement);
@@ -278,7 +269,6 @@ export default {
       axios
         .get(`${API_BASE_URL}/veicoli`)
         .then((response) => {
-          console.log(response.data);
           this.veicoli = response.data;
         })
         .catch((error) => {
@@ -290,7 +280,6 @@ export default {
       axios
         .post(`${API_BASE_URL}/veicoli/assicurazione/scaduta`)
         .then((response) => {
-          console.log(response.data);
           this.veicoliScadenza = response.data;
         })
         .catch((error) => {
@@ -316,7 +305,6 @@ export default {
           .post(`${API_BASE_URL}/assegnazioni/assegnazionirange`, payload)
           .then((response) => {
             this.assegnazioni = response.data;
-            console.log("Ass " + this.assegnazioni);
             resolve(); // Risolvi la promise quando i dati sono stati caricati
           })
           .catch((error) => {
@@ -344,7 +332,6 @@ export default {
         const dataPartenza = new Date(assegnazione.datapartenza);
         return dataPartenza >= startDate && dataPartenza <= endDate;
       });
-      console.log("Filtered assignments: ", this.filteredAssegnazioni); // Check the filtered result
     },
   },
 };
