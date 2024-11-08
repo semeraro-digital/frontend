@@ -90,7 +90,13 @@ const route = useRoute(); // Ottieni la rotta attuale
             <span>{{ $t("service") }}</span></a>
         </RouterLink>
       </li>
-
+      <li class="nav-item">
+        <RouterLink to="/corseAll">
+          <a class="nav-link" href="tables.html">
+            <i class="fas fa-fw fa-table"></i>
+            <span>{{ $t("serviceAll") }}</span></a>
+        </RouterLink>
+      </li>
 <!--
       <li class="nav-item">
         <RouterLink to="/assegnazioni">

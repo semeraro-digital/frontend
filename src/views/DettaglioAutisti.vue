@@ -39,7 +39,7 @@
     deleteAutistiModal = new Modal('#modaleDelete');
     addAssegnazioneModal = new Modal('#modalAddAss');
 
-    axios.get(`https://gestioneautistibe.onrender.com/assegnazioni`, {params: {id: id}})
+    axios.get(`${API_BASE_URL}/assegnazioni`, {params: {id: id}})
         .then(response => {
           assegnazioni.value = response.data;
         })
@@ -48,7 +48,7 @@
           console.error('Errore durante la chiamata API:', err);
         });
 
-    axios.get(`https://gestioneautistibe.onrender.com/autisti`, {params: {id: id}})
+    axios.get(`${API_BASE_URL}/autisti`, {params: {id: id}})
         .then(response => {
           const autistaTrovato = response.data.find(item => item.id === id);
           if (autistaTrovato) {
@@ -74,7 +74,7 @@
         stato: newAssegnazione.value.stato,
         reportid: newAssegnazione.value.reportid
       };
-      const response = await axios.post('https://gestioneautistibe.onrender.com/assegnazioni', request);
+      const response = await axios.post(`${API_BASE_URL}/assegnazioni`, request);
       assegnazioni.value.push(request)
       resetForm();
     } catch (err) {
@@ -95,7 +95,7 @@ function formatDate(dateString) {
 
   const cancellaAutista = async () => {
     try {
-      const response = await axios.delete(`https://gestioneautistibe.onrender.com/autisti/${id}`);
+      const response = await axios.delete(`${API_BASE_URL}/autisti/${id}`);
       console.log('Autista cancellato con successo:', response.data);
       // COMMENTO qui devi fare attenzione a usare push poi ti spiego perché ricordamelo
       // router.push('/nuova-url');

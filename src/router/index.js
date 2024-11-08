@@ -81,6 +81,11 @@ const router = createRouter({
             name: 'profilo',
             component: () => import('../views/Profilo.vue')
         },
+        {
+            path: '/corseAll',
+            name: 'corseAll',
+            component: () => import('../views/corseAll.vue')
+        },
     ]
 });
 

@@ -117,6 +117,9 @@ const messages = {
     autista :"conductores",
     tratta: "Tratta ",
     FiltraData:"Filtra per data",
+    tutor:"Monitora",
+    dataInizio:"Data Inizio",
+    dataFine:"Data Fine",
   },
   it: {
     addAssignment: 'Aggiungi Assegnazione',
@@ -229,6 +232,10 @@ const messages = {
     autista :"Autista",
     tratta: "Service ",
     FiltraData:"Filtra per data",
+    tutor:"Tutor",
+    serviceAll:"Service History",
+    dataInizio:"Data Inizio",
+    dataFine:"Data Fine",
   },
   es: {
     addAssignment: 'Agregar Asignación',
@@ -343,6 +350,10 @@ const messages = {
     autista :"Conductores",
     tratta: "Service ",
     FiltraData:"Filtra per data",
+    tutor:"Monitora",
+    serviceAll:"Service History",
+    dataInizio: "Fecha de Inicio",
+    dataFine: "Fecha de Fin",
   }
 };
 

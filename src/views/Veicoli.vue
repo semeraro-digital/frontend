@@ -8,7 +8,7 @@ import { onMounted, ref } from "vue";
 import { useI18n } from 'vue-i18n'; // Importa useI18n
 
 const { t } = useI18n(); // Destruttura t per le traduzioni
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const veicoli = ref([]);
 const error = ref(null);
 const selectedAutista = ref(null);
@@ -27,7 +27,8 @@ onMounted(() => {
   detailModal = new Modal('#myModal');
 
   veicoli.value.splice(0);
-  axios.get('https://gestioneautistibe.onrender.com/veicoli')
+  
+  axios.get(`${API_BASE_URL}/veicoli`)
       .then(response => {
         veicoli.value.push(...response.data);
       })
@@ -55,7 +56,7 @@ function openAddVehicleModal() {
 
 async function saveVehicle() {
   try {
-    const response = await axios.post('https://gestioneautistibe.onrender.com/veicoli', newVeicolo.value);
+    const response = await axios.post(`${API_BASE_URL}/veicoli`, newVeicolo.value);
     console.log('Veicolo aggiunto:', response.data);
 
     // Aggiorna la lista dei veicoli dopo l'aggiunta
@@ -93,7 +94,7 @@ async function eliminaVeicolo(id) {
   if (!conferma) return;
 
   try {
-    await axios.delete(`https://gestioneautistibe.onrender.com/veicoli/${id}`);
+    await axios.delete(`${API_BASE_URL}/veicoli/${id}`);
     // Rimuovi il veicolo dall'array locale dopo l'eliminazione
     veicoli.value = veicoli.value.filter(veicolo => veicolo.id !== id);
     console.log(`Veicolo con ID ${id} eliminato con successo.`);
