@@ -3,14 +3,14 @@
     <div class="container-fluid h-custom">
       <div class="row d-flex justify-content-center align-items-center h-100">
         <div class="col-md-9 col-lg-6 col-xl-5">
-          <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/draw2.webp"
-            class="img-fluid" alt="Sample image" />
+          <img
+            src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/draw2.webp"
+            class="img-fluid"
+            alt="Sample image"
+          />
         </div>
         <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
           <form @submit.prevent="handleLogin">
-
-
-
             <!-- Username input -->
             <div class="form-outline mb-4">
               <input
@@ -46,8 +46,12 @@
             </div>
 
             <div class="text-center text-lg-start mt-4 pt-2">
-              <button type="submit" class="btn btn-primary btn-lg" :disabled="loading"
-                style="padding-left: 2.5rem; padding-right: 2.5rem;">
+              <button
+                type="submit"
+                class="btn btn-primary btn-lg"
+                :disabled="loading"
+                style="padding-left: 2.5rem; padding-right: 2.5rem;"
+              >
                 Login
               </button>
               <p class="small fw-bold mt-2 pt-1 mb-0">
@@ -64,20 +68,13 @@
       </div>
     </div>
 
-    <div class="d-flex flex-column flex-md-row text-center text-md-start justify-content-between py-4 px-4 px-xl-5 bg-primary">
-      <div class="text-white mb-3 mb-md-0">Copyright © 2020. All rights reserved.</div>
-      <div>
-        <a href="#!" class="text-white me-4"><i class="fab fa-facebook-f"></i></a>
-        <a href="#!" class="text-white me-4"><i class="fab fa-twitter"></i></a>
-        <a href="#!" class="text-white me-4"><i class="fab fa-google"></i></a>
-        <a href="#!" class="text-white"><i class="fab fa-linkedin-in"></i></a>
-      </div>
-    </div>
+
   </section>
 </template>
 
 <script>
 import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
   data() {
@@ -87,6 +84,11 @@ export default {
       error: null,
       loading: false,
     };
+  },
+  computed: {
+    isAuthenticated() {
+      return !!localStorage.getItem('token'); // Check if the token exists
+    },
   },
   methods: {
     async handleLogin() {
@@ -100,8 +102,8 @@ export default {
         });
 
         const token = response.data.token;
-        localStorage.setItem('token', token);
-        this.$router.push('/');
+        localStorage.setItem('token', token); // Save token
+        this.$router.push('/'); // Redirect to home after login
       } catch (err) {
         this.error = err.response ? err.response.data.message : 'Login fallito. Riprova.';
         console.error('Login error:', err);
@@ -110,11 +112,17 @@ export default {
       }
     },
   },
+  mounted() {
+    // Redirect to login page if not authenticated
+    if (!this.isAuthenticated) {
+      this.$router.push('/login');
+    }
+  },
 };
 </script>
 
 <style scoped>
-/* Applica stile per una migliore estetica, ispirata al template */
+/* Style for better aesthetics */
 .vh-100 {
   height: 100vh;
 }
