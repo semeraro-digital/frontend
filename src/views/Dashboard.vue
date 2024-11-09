@@ -585,7 +585,7 @@ export default {
                   <td>{{ assegnazione.descrizionetratta }}</td>
                   <td>{{ assegnazione.tutor }}</td>
                   <td>{{ assegnazione.email }}</td>
-                  <td>{{ assegnazione.sendEmail }}</td>
+                  <td>{{ assegnazione.reportsendemail }}</td>
                 
                 </tr>
               </tbody>
