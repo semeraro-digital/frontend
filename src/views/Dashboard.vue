@@ -43,7 +43,7 @@ export default {
   },
   methods: {
     formatData(data) {
-      return moment(data).format('dd/MM/yyyy HH:mm');
+      return moment(data).format('DD/yyyy HH:mm');
     },
     fetchAutisti() {
       axios
@@ -572,6 +572,9 @@ export default {
                   <th>{{ $t("autista") }}</th>
                   <th>{{ $t("tratta") }}</th>
                   <th>{{ $t("tutor") }}</th>
+                  <th>{{ $t("email") }}</th>
+                  <th>{{ $t("sendEmail") }}</th>
+                 
                 </tr>
               </thead>
               <tbody>
@@ -581,6 +584,9 @@ export default {
                   <td>{{ assegnazione.nomeautista }} {{ assegnazione.cognomeautista }}</td>
                   <td>{{ assegnazione.descrizionetratta }}</td>
                   <td>{{ assegnazione.tutor }}</td>
+                  <td>{{ assegnazione.email }}</td>
+                  <td>{{ assegnazione.sendEmail }}</td>
+                
                 </tr>
               </tbody>
             </table>

@@ -354,6 +354,9 @@ const messages = {
     serviceAll:"Service History",
     dataInizio: "Fecha de Inicio",
     dataFine: "Fecha de Fin",
+    sendWA: "Envío Whatsapp",
+    sendEmail: "Envío Email",
+    informazioniPers: "Información personal",
   }
 };
 
