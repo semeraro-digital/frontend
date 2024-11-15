@@ -25,8 +25,8 @@ const addTratta = async () => {
     errorModal.value = null;
     const request=JSON.parse(JSON.stringify(newTratta.value));
     request.cadenza=request.cadenza.filter(cad=>!!cad).join(',');
-    if (request.orapartenza ) {
-    request.orapartenza=request.orapartenza.hours + ':' + request.orapartenza.minutes ;
+    if (request.ora ) {
+    request.ora=request.ora.hours + ':' + request.ora.minutes ;
     }
     const response = await axios.post(`${API_BASE_URL}/tratte`, request);
     console.log('Tratta aggiunta:', response.data);
@@ -196,7 +196,7 @@ onMounted(() => {
                     :minutes-increment="5"
                     :minutes-grid-increment="5"
                     format="HH:mm"
-                    v-model="newTratta.orapartenza"
+                    v-model="newTratta.ora"
                     locale="it"
                     :select-text="$t('assign')"
                     :cancel-text="$t('cancel')"
