@@ -12,6 +12,7 @@ const newTratta = ref({
   descrizione: '',
   indirizzopartenza: '',
   indirizzoarrivo: '',
+  tutor:'',
   cadenza: []
 });
 
@@ -22,7 +23,12 @@ const errorModal = ref(null);
 const addTratta = async () => {
   try {
     errorModal.value = null;
-    const response = await axios.post(`${API_BASE_URL}/tratte`, newTratta.value);
+    const request=JSON.parse(JSON.stringify(newTratta.value));
+    request.cadenza=request.cadenza.filter(cad=>!!cad).join(',');
+    if (request.orapartenza ) {
+    request.orapartenza=request.orapartenza.hours + ':' + request.orapartenza.minutes ;
+    }
+    const response = await axios.post(`${API_BASE_URL}/tratte`, request);
     console.log('Tratta aggiunta:', response.data);
 
     const modalElement = document.getElementById('creaTrattaModal');
@@ -31,7 +37,7 @@ const addTratta = async () => {
       modal.hide();
     }
 
-    tratte.value.push(JSON.parse(JSON.stringify(newTratta.value)));
+    tratte.value.push(JSON.parse(JSON.stringify(request)));
     resetForm();
   } catch (err) {
     errorModal.value = t('errorInsertionFailed'); // Messaggio di errore tradotto
@@ -99,9 +105,16 @@ onMounted(() => {
                 <div class="text-center font-weight-bold text-warning text-uppercase mb-1">
                   {{ tratta.descrizione }}
                 </div>
-                <div v-if="tratta.cadenza"
-                     class="text-center text-xs h5 mb-0 font-weight-bold text-gray-800">
+                <div   class="text-center text-xs h5 mb-0 font-weight-bold text-gray-800">
                   {{ tratta.indirizzopartenza }} - {{ tratta.indirizzoarrivo }}
+                </div>
+                <div 
+                     class="text-center text-xs h5 mb-0 font-weight-bold text-gray-800">
+                  <span v-text="tratta.cadenza || '-'"></span>
+                </div>
+                <div 
+                     class="text-center text-xs h5 mb-0 font-weight-bold text-gray-800">
+                  <span v-text="tratta.ora || '-'"></span>
                 </div>
               </div>
             </div>
@@ -155,16 +168,43 @@ onMounted(() => {
                 </div>
                 <div class="row mt-4">
                   <div class="col-12">
+                    <label for="arrivo" class="form-label">{{ t('tutor') }}</label>
+                    <input type="text" class="form-control" id="tutor" v-model="newTratta.tutor"/>
+                  </div>
+                </div>
+                <div class="row mt-4">
+                  <div class="col-12">
                     <label class="form-label">{{ t('frequency') }}</label><br/>
                     <div class="form-check form-check-inline">
-                      <template v-for="(day, index) in ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom']">
+                     <template v-for="(day, index) in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']">
                         <input class="form-check-input" type="checkbox" :id="'inlineCheck' + index"
-                               :true-value="index + 1" :value="index + 1" v-model="newTratta.cadenza[index]"/>
+                               :true-value="day" :value="day" v-model="newTratta.cadenza[index]"/>
                         <label class="form-check-label mr-2" :for="'inlineCheck' + index">{{ t(day) }}</label>
                       </template>
                     </div>
                   </div>
                 </div>
+
+      <div class="row mt-4">
+                  <div class="col-12">
+                    <label for="arrivo" class="form-label">{{ t('ora') }}</label>
+                    <VueDatePicker
+                    id="ora"
+                    time-picker
+                    text-input
+                    :hours-increment="1"
+                    :minutes-increment="5"
+                    :minutes-grid-increment="5"
+                    format="HH:mm"
+                    v-model="newTratta.orapartenza"
+                    locale="it"
+                    :select-text="$t('assign')"
+                    :cancel-text="$t('cancel')"
+                  ></VueDatePicker>
+                  </div>
+                  
+                </div>
+                     
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('close') }}</button>

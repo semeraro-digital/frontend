@@ -357,6 +357,8 @@ const messages = {
     sendWA: "Envío Whatsapp",
     sendEmail: "Envío Email",
     informazioniPers: "Información personal",
+    aggiungiCorse: 'Agregar',
+    modificaCorsa: 'Editar',
   }
 };
 

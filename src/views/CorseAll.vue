@@ -66,10 +66,9 @@ const eliminaCorsa = async (id) => {
 const filtraCorse = () => {
   return (corse.value || []).filter((corsa) => { // Assicuriamoci che `corse.value` sia un array
     const corsaData = moment(corsa.datapartenza);
-
     // Filtraggio per range di date
-    const matchDataPartenza = (!filtroDataInizio.value || corsaData.isSameOrAfter(filtroDataInizio.value)) &&
-                              (!filtroDataFine.value || corsaData.isSameOrBefore(filtroDataFine.value));
+const matchDataPartenza = (!filtroDataInizio.value || corsaData.isSameOrAfter(moment(filtroDataInizio.value).startOf('day'))) &&
+                          (!filtroDataFine.value || corsaData.isSameOrBefore(moment(filtroDataFine.value).endOf('day')));
     const matchTutor = !filtroTutor.value || (corsa.tutor && corsa.tutor.toLowerCase().includes(filtroTutor.value.toLowerCase()));
     const matchAutista = !filtroAutista.value || `${corsa.nomeautista} ${corsa.cognomeautista}`.toLowerCase().includes(filtroAutista.value.toLowerCase());
     const matchVeicolo = !filtroVeicolo.value || (corsa.modelloveicolo && corsa.modelloveicolo.toLowerCase().includes(filtroVeicolo.value.toLowerCase()));
