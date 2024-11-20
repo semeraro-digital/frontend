@@ -5,14 +5,15 @@ import _ from "lodash";
 import moment from "moment";
 import { ref } from "vue";
 
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Variabile per controllare se il bottone è disabilitato
 const isButtonDisabled = ref(false);
+const isLoading = ref(false);
 
 export default {
   data() {
     return {
+      isLoading,
       autisti: [],
       AutistiScadenza: [],
       veicoli: [],
@@ -29,6 +30,11 @@ export default {
         dataFine: moment().add(1, "days").endOf("day").format("YYYY-MM-DDTHH:mm:ss"),
       },
       selectedDate: "today", // To help with filtering
+      formData: {
+        dataInizio: moment().format("YYYY-MM-DDT00:00:00"),
+        dataFine: moment().format("YYYY-MM-DDT23:59:59"),
+        email: "",
+      },
     };
   },
   mounted() {
@@ -40,10 +46,14 @@ export default {
       // Call filterAssegnazioni after assegnazioni data is fetched
       this.filterAssegnazioni();
     });
+
+      const modalElement = document.getElementById("adminModal");
+  new Modal(modalElement);
   },
   methods: {
+
     formatData(data) {
-      return moment(data).format('DD/yyyy HH:mm');
+      return moment(data).format("DD/yyyy HH:mm");
     },
     fetchAutisti() {
       axios
@@ -73,9 +83,80 @@ export default {
         });
     },
 
+    submitForm() {
+  // Controlliamo che tutti i campi siano compilati
+  let { dataInizio, dataFine, email } = this.formData;
+
+  if (!dataInizio || !email) {
+    alert("Tutti i campi sono obbligatori!");
+    return;
+  }
+
+  dataInizio = new Date(this.formData.dataInizio); // Conversione a Date
+  dataInizio.setHours(0, 0, 0, 0); // Impostazione dell'ora
+  console.log(dataInizio);
+
+  dataFine = new Date(dataInizio); // Cloniamo dataInizio
+  dataFine.setHours(23, 59, 59, 999); // Impostazione dell'ora
+  console.log(dataFine);
+
+  // Chiamiamo la funzione turniAutistaOggiAdmin e passiamo i dati
+  this.turniAutistaAdmin(this.formData);
+
+    },
+    turniAutistaAdmin() {
+      if (isButtonDisabled.value) return; // Non fare nulla se è disabilitato
+      isLoading.value = true;
+      isButtonDisabled.value = true; // Disabilita il bottone
+      const toastTrigger = document.getElementById("liveToastBtn");
+      const toastLiveExample = document.getElementById("liveToast");
+      const toastLiveError = document.getElementById("ToastError");
+
+      // Disabilita il pulsante
+      if (toastTrigger) {
+        toastTrigger.disabled = true;
+      }
+
+   isLoading.value = true;
+      axios
+        .post(`${API_BASE_URL}/admin/generate-pdfSendEmail`, this.formData)
+        .then((response) => {
+          const toastBootstrap = Toast.getOrCreateInstance(toastLiveExample);
+          toastBootstrap.show();
+          // Riabilita il pulsante dopo che il toast è stato mostrato
+          toastBootstrap._element.addEventListener("hidden.bs.toast", () => {
+            if (toastTrigger) {
+              toastTrigger.disabled = false;
+            }
+          });
+  // Chiudi la modale programmaticamente
+      const modalElement = document.getElementById("adminModal");
+      const modalInstance = Modal.getInstance(modalElement) || new Modal(modalElement);
+      modalInstance.hide();
+        })
+        .catch((error) => {
+          if (toastLiveError) {
+            const toastBootstrap = Toast.getOrCreateInstance(toastLiveError);
+            toastBootstrap.show();
+          }
+          this.error = error.response ? error.response.data.message : error.message;
+          console.error("Errore durante la chiamata API:", error);
+
+          // Riabilita il pulsante anche in caso di errore
+          if (toastTrigger) {
+            toastTrigger.disabled = false;
+       
+          }
+        })
+        .finally(() => {
+          isButtonDisabled.value = false; // Riabilita il bottone dopo l'operazione
+          isLoading.value = false;
+          this.aggiorna();
+        });
+    },
     turniAutistaOggi() {
       if (isButtonDisabled.value) return; // Non fare nulla se è disabilitato
-
+      isLoading.value = true;
       isButtonDisabled.value = true; // Disabilita il bottone
       const toastTrigger = document.getElementById("liveToastBtn");
       const toastLiveExample = document.getElementById("liveToast");
@@ -98,7 +179,6 @@ export default {
               toastTrigger.disabled = false;
             }
           });
-
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -115,6 +195,8 @@ export default {
         })
         .finally(() => {
           isButtonDisabled.value = false; // Riabilita il bottone dopo l'operazione
+          isLoading.value = false;
+          this.aggiorna();
         });
     },
     turniAutistaDomani() {
@@ -140,7 +222,6 @@ export default {
               toastTrigger.disabled = false;
             }
           });
-
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -186,7 +267,6 @@ export default {
               toastTrigger.disabled = false;
             }
           });
-
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -228,7 +308,6 @@ export default {
               toastTrigger.disabled = false;
             }
           });
-
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -333,43 +412,85 @@ export default {
         return dataPartenza >= startDate && dataPartenza <= endDate;
       });
     },
+    aggiorna() {
+      this.fetchAssegnazioni().then(() => {
+        // Call filterAssegnazioni after assegnazioni data is fetched
+        this.filterAssegnazioni();
+      });
+    },
   },
 };
 </script>
 
 <template>
+      <!-- Modale -->
+      <div
+        class="modal fade"
+        id="adminModal"
+        tabindex="-1"
+        aria-labelledby="modaleEmailLabel"
+        aria-hidden="true"
+      
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+                  <div v-if="isLoading" class="text-center" style="margin-top: 20px">
+                <div class="spinner-border" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>{{ $t("loadingData") }}</p>
+              </div>
+              <h5 class="modal-title" id="modaleEmailLabel">Invia Turni via Email</h5>
+          <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+              <form @submit.prevent="submitForm">
+                <!-- Campo Data Partenza -->
+                <div class="mb-3">
+                  <label for="dataPartenza" class="form-label">{{
+                    $t("dataReport")
+                  }}</label>
+                  
+                  <VueDatePicker
+                    id="data"
+                    :enable-time-picker="false"
+                    auto-apply
+                    text-input
+                    format="dd/MM/yyyy"
+                    v-model="formData.dataInizio"
+                    locale="it"
+                  ></VueDatePicker>
+                </div>
+
+                <!-- Campo Email -->
+                <div class="mb-3">
+                  <label for="email" class="form-label">{{ $t("email") }}</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    v-model="formData.email"
+                    placeholder="example@domain.com"
+                    required
+                  />
+                </div>
+
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary">{{ $t("send") }}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- fine modale -->
   <div class="container-fluid">
-    <!--    <div class="row">-->
-    <!--      <div class="col-auto">-->
-    <!--        &lt;!&ndash;  <button type="button" class="btn btn-secondary mb-4" data-bs-toggle="modal" data-bs-target="#exampleModal">-->
-    <!--           Invia turni con data</button> &ndash;&gt;-->
-    <!--      </div>-->
-    <!--<div class="col-auto">
-      <button
-        id="liveToastBtn"
-        type="button"
-        class="btn btn-secondary mb-4"
-        @click="turniAutistaOggi"
-      >
-        {{ $t("inviaTurniOggi") }}
-      </button>
-    </div>
-    <div class="col-auto">
-      <button
-        id="liveToastBtnDmn"
-        type="button"
-        class="btn btn-secondary mb-4"
-        @click="turniAutistaDomani"
-      >
-        {{ $t("inviaTurniDomani") }}
-      </button>
-    </div>-->
-    <!--    </div>-->
-
-    <!--    <div class="row">-->
-    <!--      <div class="col-4"></div>-->
-    <!--    </div>-->
-
     <div class="row">
       <div class="col-lg-3">
         <div class="card border-left-primary shadow py-2 mb-4">
@@ -377,9 +498,16 @@ export default {
             <div class="row no-gutters align-items-center">
               <div class="col mr-2">
                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                  Le corse del ultimo mese
+                  {{ $t("inviaTurniAdmin") }}
                 </div>
-                <div class="h5 mb-0 font-weight-bold text-gray-800">146</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                  <button  type="button"
+          class="btn btn-secondary"
+          data-bs-toggle="modal"
+          data-bs-target="#adminModal">
+                    <i class="fas fa-envelope mr-2"></i>{{ $t("oggi") }} via email
+                  </button>
+                </div>
               </div>
               <div class="col-auto">
                 <i class="fas fa-route fa-2x text-gray-300"></i>
@@ -388,6 +516,7 @@ export default {
           </div>
         </div>
       </div>
+
       <div class="col-lg-9">
         <div class="card border-left-primary shadow py-2 mb-4">
           <div class="card-body">
@@ -430,130 +559,23 @@ export default {
                   </button>
                 </div>
               </div>
+
+              <!-- Spinner di caricamento -->
+              <div v-if="isLoading" class="text-center" style="margin-top: 20px">
+                <div class="spinner-border" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>{{ $t("loadingData") }}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
     <div class="row">
-      <!--      <div class="col-2">-->
-      <!--        <div-->
-      <!--            class="card border-left-primary shadow py-2 mb-4"-->
-      <!--            role="button"-->
-      <!--            tabindex="0"-->
-      <!--            @click="turniAutistaOggi"-->
-      <!--            @keydown.enter="turniAutistaOggi"-->
-      <!--            style="cursor: pointer"-->
-      <!--            :class="{ 'disabled-card': isButtonDisabled }"-->
-      <!--        >-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-m font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  {{ $t("inviaTurni") }}-->
-      <!--                </div>-->
-      <!--                <div class="text-s text-muted">{{ $t("oggi") }}</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fas fa-envelope fa-3x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-
-      <!--        <div-->
-      <!--            class="card border-left-primary shadow py-2 mb-4"-->
-      <!--            role="button"-->
-      <!--            tabindex="0"-->
-      <!--            @click="turniAutistaDomani"-->
-      <!--            @keydown.enter="turniAutistaDomani"-->
-      <!--            style="cursor: pointer"-->
-      <!--            :class="{ 'disabled-card': isButtonDisabled }"-->
-      <!--        >-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-m font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  {{ $t("inviaTurni") }}-->
-      <!--                </div>-->
-      <!--                <div class="text-s text-muted">{{ $t("domani") }}</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fas fa-envelope fa-3x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-      <!--      </div>-->
-      <!--      <div class="col-2">-->
-      <!--        <div-->
-      <!--            class="card border-left-primary shadow py-2 mb-4"-->
-      <!--            role="button"-->
-      <!--            tabindex="0"-->
-      <!--            @click="turniAutistaOggiWA"-->
-      <!--            @keydown.enter="turniAutistaOggiWA"-->
-      <!--            style="cursor: pointer"-->
-      <!--            :class="{ 'disabled-card': isButtonDisabled }"-->
-      <!--        >-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-m font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  {{ $t("inviaTurni") }}-->
-      <!--                </div>-->
-      <!--                <div class="text-s text-muted">{{ $t("oggi") }}</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fab fa-whatsapp fa-3x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-
-      <!--        <div-->
-      <!--            class="card border-left-primary shadow py-2 mb-4"-->
-      <!--            role="button"-->
-      <!--            tabindex="0"-->
-      <!--            @click="turniAutistaDomaniWA"-->
-      <!--            @keydown.enter="turniAutistaDomaniWA"-->
-      <!--            style="cursor: pointer"-->
-      <!--            :class="{ 'disabled-card': isButtonDisabled }"-->
-      <!--        >-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-m font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  {{ $t("inviaTurni") }}-->
-      <!--                </div>-->
-      <!--                <div class="text-s text-muted">{{ $t("domani") }}</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fab fa-whatsapp fa-3x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-
-      <!--        <div class="card border-left-primary shadow py-2 mb-4">-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  Le corse del ultimo mese-->
-      <!--                </div>-->
-      <!--                <div class="h5 mb-0 font-weight-bold text-gray-800">146</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fas fa-route fa-2x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-      <!--      </div>-->
-
       <div class="col-12">
-      <!--turni oggi-->
-      <div class="dashboard-section">
+        <!--turni oggi-->
+        <div class="dashboard-section">
           <h2 class="section-header">{{ $t("turnioggi") }}</h2>
 
           <label for="dataFilter">{{ $t("FiltraData") }}</label>
@@ -574,25 +596,25 @@ export default {
                   <th>{{ $t("tutor") }}</th>
                   <th>{{ $t("email") }}</th>
                   <th>{{ $t("sendEmail") }}</th>
-                 
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="assegnazione in filteredAssegnazioni" :key="assegnazione.id">
                   <td>{{ assegnazione.modelloveicolo }}</td>
-                 <td>{{ formatData(assegnazione.datapartenza) }}</td>
-                  <td>{{ assegnazione.nomeautista }} {{ assegnazione.cognomeautista }}</td>
+                  <td>{{ formatData(assegnazione.datapartenza) }}</td>
+                  <td>
+                    {{ assegnazione.nomeautista }} {{ assegnazione.cognomeautista }}
+                  </td>
                   <td>{{ assegnazione.descrizionetratta }}</td>
                   <td>{{ assegnazione.tutor }}</td>
                   <td>{{ assegnazione.email }}</td>
                   <td>{{ assegnazione.reportsendemail }}</td>
-                
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-      <!--scadenza assicurazione  -->
+        <!--scadenza assicurazione  -->
         <div class="dashboard-section">
           <h2 class="section-header">{{ $t("VeicoliScadenza") }}</h2>
           <div v-if="error" class="alert alert-danger">{{ error }}</div>
@@ -682,7 +704,7 @@ export default {
 
   <div
     class="modal fade"
-    id="exampleModal"
+    id=""
     tabindex="-1"
     aria-labelledby="exampleModalLabel"
     aria-hidden="true"
@@ -747,8 +769,8 @@ export default {
       style="width: 400px"
     >
       <div class="toast-header">
-        <strong class="me-auto">SUCCESSO</strong>
-        <small>ORA</small>
+        <strong class="me-auto"></strong>
+        <small></small>
         <button
           type="button"
           class="btn-close btn-close-white"
@@ -756,7 +778,7 @@ export default {
           aria-label="Close"
         ></button>
       </div>
-      <div class="toast-body" style="font-size: 1.25rem">TURNI INVIATI CON SUCCESSO</div>
+      <div class="toast-body" style="font-size: 1.25rem">{{ $t("turniSuccess") }}</div>
     </div>
   </div>
 
@@ -774,8 +796,8 @@ export default {
     >
       <!-- Aumenta la larghezza -->
       <div class="toast-header">
-        <strong class="me-auto text-danger">ERRORE</strong>
-        <small>NOW</small>
+        <strong class="me-auto text-danger"></strong>
+        <small></small>
         <button
           type="button"
           class="btn-close"
@@ -785,7 +807,7 @@ export default {
       </div>
       <div class="toast-body" style="font-size: 1.25rem">
         <!-- Aumenta la dimensione del testo -->
-        ERRORE INVIO TURNI
+        {{ $t("turniError") }}
       </div>
     </div>
   </div>

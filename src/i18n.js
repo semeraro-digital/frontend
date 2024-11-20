@@ -120,6 +120,8 @@ const messages = {
     tutor:"Monitora",
     dataInizio:"Data Inizio",
     dataFine:"Data Fine",
+    turniSuccess:"turni inviati con successo",
+    turniError: "error al enviar los turnos",
   },
   it: {
     addAssignment: 'Aggiungi Assegnazione',
@@ -236,6 +238,8 @@ const messages = {
     serviceAll:"Service History",
     dataInizio:"Data Inizio",
     dataFine:"Data Fine",
+    turniSuccess:"turni inviati con successo",
+    turniError: "error al enviar los turnos",
   },
   es: {
     addAssignment: 'Agregar Asignación',
@@ -359,6 +363,8 @@ const messages = {
     informazioniPers: "Información personal",
     aggiungiCorse: 'Agregar',
     modificaCorsa: 'Editar',
+    turniSuccess:"Turnos enviados con éxito",
+    turniError: "error al enviar los turnos",
   }
 };
 

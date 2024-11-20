@@ -24,6 +24,14 @@ const router = createRouter({
             component: () => import('../views/Tratte.vue')
         },
         {
+            path: '/tratta/:id',
+            name: 'dettaglioTratta',
+            component: () => import('../views/DettaglioTratte.vue'),
+            beforeEnter:(to,from) => {
+            }
+
+        },
+        {
             path: '/month',
             name: 'month',
             component: MonthView,
