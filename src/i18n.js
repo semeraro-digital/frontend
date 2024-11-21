@@ -122,6 +122,9 @@ const messages = {
     dataFine:"Data Fine",
     turniSuccess:"turni inviati con successo",
     turniError: "error al enviar los turnos",
+    success: "Operazione riuscita",
+    error: "Si è verificato un errore",
+    noAssignments: "Nessuna assegnazione trovata per le date selezionate"
   },
   it: {
     addAssignment: 'Aggiungi Assegnazione',
@@ -240,6 +243,9 @@ const messages = {
     dataFine:"Data Fine",
     turniSuccess:"turni inviati con successo",
     turniError: "error al enviar los turnos",
+    success: "Operazione riuscita",
+    error: "Si è verificato un errore",
+    noAssignments: "Nessuna assegnazione trovata per le date selezionate",
   },
   es: {
     addAssignment: 'Agregar Asignación',
@@ -365,6 +371,9 @@ const messages = {
     modificaCorsa: 'Editar',
     turniSuccess:"Turnos enviados con éxito",
     turniError: "error al enviar los turnos",
+    success: "Operación exitosa",
+    error: "Ocurrió un error",
+    noAssignments: "No se encontraron asignaciones para las fechas seleccionadas",
   }
 };
 

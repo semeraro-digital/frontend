@@ -4,12 +4,12 @@ import { Modal, Toast } from "bootstrap";
 import _ from "lodash";
 import moment from "moment";
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Variabile per controllare se il bottone è disabilitato
 const isButtonDisabled = ref(false);
 const isLoading = ref(false);
-
 export default {
   data() {
     return {
@@ -47,11 +47,10 @@ export default {
       this.filterAssegnazioni();
     });
 
-      const modalElement = document.getElementById("adminModal");
-  new Modal(modalElement);
+    const modalElement = document.getElementById("adminModal");
+    new Modal(modalElement);
   },
   methods: {
-
     formatData(data) {
       return moment(data).format("DD/yyyy HH:mm");
     },
@@ -84,27 +83,26 @@ export default {
     },
 
     submitForm() {
-  // Controlliamo che tutti i campi siano compilati
-  let { dataInizio, dataFine, email } = this.formData;
+      // Controlliamo che tutti i campi siano compilati
+      let { dataInizio, dataFine, email } = this.formData;
 
-  if (!dataInizio || !email) {
-    alert("Tutti i campi sono obbligatori!");
-    return;
-  }
+      if (!dataInizio || !email) {
+        alert("Tutti i campi sono obbligatori!");
+        return;
+      }
 
-  dataInizio = new Date(this.formData.dataInizio); // Conversione a Date
-  dataInizio.setHours(0, 0, 0, 0); // Impostazione dell'ora
-  console.log(dataInizio);
+      dataInizio = new Date(this.formData.dataInizio); // Conversione a Date
+      dataInizio.setHours(0, 0, 0, 0); // Impostazione dell'ora
 
-  dataFine = new Date(dataInizio); // Cloniamo dataInizio
-  dataFine.setHours(23, 59, 59, 999); // Impostazione dell'ora
-  console.log(dataFine);
 
-  // Chiamiamo la funzione turniAutistaOggiAdmin e passiamo i dati
-  this.turniAutistaAdmin(this.formData);
+      dataFine = new Date(dataInizio); // Cloniamo dataInizio
+      dataFine.setHours(23, 59, 59, 999); // Impostazione dell'ora
 
+      // Chiamiamo la funzione turniAutistaOggiAdmin e passiamo i dati
+      this.turniAutistaAdmin(this.formData);
     },
     turniAutistaAdmin() {
+
       if (isButtonDisabled.value) return; // Non fare nulla se è disabilitato
       isLoading.value = true;
       isButtonDisabled.value = true; // Disabilita il bottone
@@ -117,35 +115,56 @@ export default {
         toastTrigger.disabled = true;
       }
 
-   isLoading.value = true;
+      isLoading.value = true;
       axios
         .post(`${API_BASE_URL}/admin/generate-pdfSendEmail`, this.formData)
         .then((response) => {
           const toastBootstrap = Toast.getOrCreateInstance(toastLiveExample);
           toastBootstrap.show();
+
           // Riabilita il pulsante dopo che il toast è stato mostrato
           toastBootstrap._element.addEventListener("hidden.bs.toast", () => {
             if (toastTrigger) {
               toastTrigger.disabled = false;
             }
           });
-  // Chiudi la modale programmaticamente
-      const modalElement = document.getElementById("adminModal");
-      const modalInstance = Modal.getInstance(modalElement) || new Modal(modalElement);
-      modalInstance.hide();
+
+          // Chiudi la modale programmaticamente
+          const modalElement = document.getElementById("adminModal");
+          const modalInstance =
+            Modal.getInstance(modalElement) || new Modal(modalElement);
+          modalInstance.hide();
         })
         .catch((error) => {
+          // Controlla se esiste un Toast per l'errore
           if (toastLiveError) {
             const toastBootstrap = Toast.getOrCreateInstance(toastLiveError);
             toastBootstrap.show();
           }
-          this.error = error.response ? error.response.data.message : error.message;
+
+          // Personalizza il messaggio di errore in base al codice di stato
+          if (error.response) {
+            console.log("errore"+error.response.status);
+            if (error.response.status === 404) {
+              this.error ="No se encontraron asignaciones para las fechas seleccionadas" // Messaggio tradotto per 404
+           
+            } else {
+              this.error = error.response.data.message || "Error" // Messaggio tradotto per altri errori
+            }
+          } else {
+            this.error = error.message ||"Error"; // Errore di rete
+          }
+          // Imposta il testo dell'errore nel toast
+          const toastErrorMessage = document.getElementById("ToastErrorMessage");
+          if (toastErrorMessage) {
+            toastErrorMessage.textContent = this.error; // Imposta il messaggio di errore nel toast
+          }
+
           console.error("Errore durante la chiamata API:", error);
 
           // Riabilita il pulsante anche in caso di errore
           if (toastTrigger) {
             toastTrigger.disabled = false;
-       
           }
         })
         .finally(() => {
@@ -201,6 +220,7 @@ export default {
     },
     turniAutistaDomani() {
       if (isButtonDisabled.value) return; // Non fare nulla se è disabilitato
+      isLoading.value = true;
       const toastTrigger = document.getElementById("liveToastBtnDmn");
       const toastLiveExample = document.getElementById("liveToast");
       const toastLiveError = document.getElementById("ToastError");
@@ -238,13 +258,14 @@ export default {
         })
         .finally(() => {
           isButtonDisabled.value = false; // Riabilita il bottone dopo l'operazione
+          isLoading.value = false;
         });
     },
 
     //whatsapp
     turniAutistaOggiWA() {
       if (isButtonDisabled.value) return; // Non fare nulla se è disabilitato
-
+isLoading.value = true;
       isButtonDisabled.value = true; // Disabilita il bottone
       const toastTrigger = document.getElementById("liveToastBtn");
       const toastLiveExample = document.getElementById("liveToast");
@@ -282,11 +303,13 @@ export default {
           }
         })
         .finally(() => {
+          isLoading.value = false;
           isButtonDisabled.value = false; // Riabilita il bottone dopo l'operazione
         });
     },
     turniAutistaDomaniWA() {
       if (isButtonDisabled.value) return; // Non fare nulla se è disabilitato
+      isLoading.value = true;
       const toastTrigger = document.getElementById("liveToastBtnDmn");
       const toastLiveExample = document.getElementById("liveToast");
       const toastLiveError = document.getElementById("ToastError");
@@ -323,6 +346,7 @@ export default {
           }
         })
         .finally(() => {
+          isLoading.value = false;
           isButtonDisabled.value = false; // Riabilita il bottone dopo l'operazione
         });
     },
@@ -423,73 +447,70 @@ export default {
 </script>
 
 <template>
-      <!-- Modale -->
-      <div
-        class="modal fade"
-        id="adminModal"
-        tabindex="-1"
-        aria-labelledby="modaleEmailLabel"
-        aria-hidden="true"
-      
-      >
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-                  <div v-if="isLoading" class="text-center" style="margin-top: 20px">
-                <div class="spinner-border" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-                <p>{{ $t("loadingData") }}</p>
-              </div>
-              <h5 class="modal-title" id="modaleEmailLabel">Invia Turni via Email</h5>
-          <button
-                  type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
-                ></button>
+  <!-- Modale -->
+  <div
+    class="modal fade"
+    id="adminModal"
+    tabindex="-1"
+    aria-labelledby="modaleEmailLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div v-if="isLoading" class="text-center" style="margin-top: 20px">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
             </div>
-            <div class="modal-body">
-              <form @submit.prevent="submitForm">
-                <!-- Campo Data Partenza -->
-                <div class="mb-3">
-                  <label for="dataPartenza" class="form-label">{{
-                    $t("dataReport")
-                  }}</label>
-                  
-                  <VueDatePicker
-                    id="data"
-                    :enable-time-picker="false"
-                    auto-apply
-                    text-input
-                    format="dd/MM/yyyy"
-                    v-model="formData.dataInizio"
-                    locale="it"
-                  ></VueDatePicker>
-                </div>
-
-                <!-- Campo Email -->
-                <div class="mb-3">
-                  <label for="email" class="form-label">{{ $t("email") }}</label>
-                  <input
-                    type="email"
-                    class="form-control"
-                    id="email"
-                    v-model="formData.email"
-                    placeholder="example@domain.com"
-                    required
-                  />
-                </div>
-
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">{{ $t("send") }}</button>
-                </div>
-              </form>
-            </div>
+            <p>{{ $t("loadingData") }}</p>
           </div>
+          <h5 class="modal-title" id="modaleEmailLabel">Invia Turni via Email</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="submitForm">
+            <!-- Campo Data Partenza -->
+            <div class="mb-3">
+              <label for="dataPartenza" class="form-label">{{ $t("dataReport") }}</label>
+
+              <VueDatePicker
+                id="data"
+                :enable-time-picker="false"
+                auto-apply
+                text-input
+                format="dd/MM/yyyy"
+                v-model="formData.dataInizio"
+                locale="it"
+              ></VueDatePicker>
+            </div>
+
+            <!-- Campo Email -->
+            <div class="mb-3">
+              <label for="email" class="form-label">{{ $t("email") }}</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                v-model="formData.email"
+                placeholder="example@domain.com"
+                required
+              />
+            </div>
+
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">{{ $t("send") }}</button>
+            </div>
+          </form>
         </div>
       </div>
-      <!-- fine modale -->
+    </div>
+  </div>
+  <!-- fine modale -->
   <div class="container-fluid">
     <div class="row">
       <div class="col-lg-3">
@@ -501,11 +522,13 @@ export default {
                   {{ $t("inviaTurniAdmin") }}
                 </div>
                 <div class="h5 mb-0 font-weight-bold text-gray-800">
-                  <button  type="button"
-          class="btn btn-secondary"
-          data-bs-toggle="modal"
-          data-bs-target="#adminModal">
-                    <i class="fas fa-envelope mr-2"></i>{{ $t("oggi") }} via email
+                  <button
+                    type="button"
+                     class="btn btn-danger btn-sm me-md-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#adminModal"
+                  >
+                    <i class="fas fa-envelope mr-2"></i> via email
                   </button>
                 </div>
               </div>
@@ -788,7 +811,8 @@ export default {
   >
     <div
       id="ToastError"
-      class="toast"
+      
+      class="toast align-items-center text-bg-danger border-0"
       role="alert"
       aria-live="assertive"
       aria-atomic="true"
@@ -805,9 +829,8 @@ export default {
           aria-label="Close"
         ></button>
       </div>
-      <div class="toast-body" style="font-size: 1.25rem">
-        <!-- Aumenta la dimensione del testo -->
-        {{ $t("turniError") }}
+      <div class="toast-body" style="font-size: 1.25rem" id="ToastErrorMessage"> 
+      
       </div>
     </div>
   </div>
