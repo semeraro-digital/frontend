@@ -11,7 +11,7 @@ const router = useRouter();
 const id = route.params.id;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 //variabili mia modale
-let modificaAutistaModal = null;
+let addAssegnazioneModal = null;
 let deleteAutistiModal = null;
 
 let assegnazioni = ref([]);
@@ -28,16 +28,16 @@ let newAssegnazione = ref({
 let autista = ref({
   nome: "",
   cognome: "",
-  codfiscale: "",
-  scadenzapatente: "",
+  codFiscale: "",
+  scadenzaPatente: "",
   email: "",
   telefono: "",
-  numpatente: "",
+  numPatente: "",
 });
 
 onMounted(() => {
-  deleteAutistiModal = new Modal(document.getElementById("modaleDelete"));
-  modificaAutistaModal = new Modal(document.getElementById("modificaAutistaModal"));
+  deleteAutistiModal = new Modal("#modaleDelete");
+  addAssegnazioneModal = new Modal("#modalAddAss");
 
   const today = new Date();
   const tomorrow = new Date();
@@ -76,7 +76,25 @@ onMounted(() => {
     });
 });
 
-
+const saveAssegnazione = async () => {
+  try {
+    const request = {
+      datapartenza: newAssegnazione.value.datapartenza,
+      dataarrivo: newAssegnazione.value.dataarrivo,
+      idautista: newAssegnazione.value.idautista,
+      idmezzo: newAssegnazione.value.idmezzo,
+      idtratta: newAssegnazione.value.idtratta,
+      stato: newAssegnazione.value.stato,
+      reportid: newAssegnazione.value.reportid,
+    };
+    const response = await axios.post(`${API_BASE_URL}/assegnazioni`, request);
+    assegnazioni.value.push(request);
+    resetForm();
+  } catch (err) {
+    console.error("Errore durante l'inserimento dell'assegnazione:", err);
+    error.value = err.response ? err.response.data.message : err.message;
+  }
+};
 
 function formatDateTime(dateTime) {
   const formattedDate = moment.utc(dateTime).format("DD/MM/YYYY");
@@ -90,7 +108,10 @@ function formatDate(dateString) {
 
 const cancellaAutista = async () => {
   try {
-    await axios.delete(`${API_BASE_URL}/autisti/${id}`);
+    const response = await axios.delete(`${API_BASE_URL}/autisti/${id}`);
+    console.log("Autista cancellato con successo:", response.data);
+    // COMMENTO qui devi fare attenzione a usare push poi ti spiego perché ricordamelo
+    // router.push('/nuova-url');
     deleteAutistiModal.hide();
     await router.replace({ path: "/autisti" });
   } catch (err) {
@@ -110,19 +131,6 @@ const resetForm = () => {
     stato: "",
     reportid: "",
   };
-};
-
-
-// Metodo per salvare le modifiche
-const salvaModifiche = async () => {
-  try {
-    const autistaPayload = { ...autista.value };
-    autistaPayload.scadenzapatente = moment(autista.value.scadenzapatente).format();
-    const response = await axios.post(`${API_BASE_URL}/autisti/modifica`, autistaPayload);
-    modificaAutistaModal.hide();
-  } catch (err) {
-    console.error(err);
-  }
 };
 </script>
 <template>
@@ -163,11 +171,7 @@ const salvaModifiche = async () => {
     <div class="row">
       <div class="col-4">
         <div class="card">
-          <div class="card-body">     
-          <button class="btn btn-primary float-end" @click="() => modificaAutistaModal.show()">
-           
-          <i class="fas fa-edit"></i>
-        </button>
+          <div class="card-body">
             <h4 class="header-title mt-0 mb-3">{{ $t("informazioniPers") }}</h4>
             <p class="text-muted font-13">{{ $t("autista") }}</p>
             <hr />
@@ -229,6 +233,9 @@ const salvaModifiche = async () => {
                 </tbody>
               </table>
             </div>
+            <!--  <button type="button" class="btn btn-secondary mt-3 float-right" data-bs-toggle="modal"
+                    data-bs-target="#addAssegnazioneModal"> Aggiungi
+            </button> -->
           </div>
         </div>
       </div>
@@ -248,7 +255,6 @@ const salvaModifiche = async () => {
     </div>
 
     <!-- Modale per aggiungere un'assegnazione -->
-<div v-if="error" class="alert alert-danger">{{ error }}</div>
 
     <div
       class="modal fade"
@@ -355,98 +361,12 @@ const salvaModifiche = async () => {
       </div>
     </div>
   </div>
-
-  <!-- Modale di Modifica -->
-<!-- Modale di Modifica -->
-<div class="modal fade" id="modificaAutistaModal" tabindex="-1" aria-labelledby="modificaAutistaLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modificaAutistaModalLabel">Modifica Autista</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form @submit.prevent="salvaModifiche">
-          <div class="mb-3">
-            <label for="nome" class="form-label">{{ $t("driverName") }}</label>
-            <input 
-              type="text" 
-              id="nome" 
-              class="form-control" 
-              v-model="autista.nome" 
-              required>
-          </div>
-          <div class="mb-3">
-            <label for="cognome" class="form-label">{{ $t("driverLastName") }}</label>
-            <input 
-              type="text" 
-              id="cognome" 
-              class="form-control" 
-              v-model="autista.cognome" 
-              required>
-          </div>
-          <div class="mb-3">
-            <label for="telefono" class="form-label">{{ $t("driverPhone") }}</label>
-            <input 
-              type="text" 
-              id="telefono" 
-              class="form-control" 
-              v-model="autista.telefono" 
-              required>
-          </div>
-          <div class="mb-3">
-            <label for="email" class="form-label">{{ $t("driverEmail") }}</label>
-            <input 
-              type="email" 
-              id="email" 
-              class="form-control" 
-              v-model="autista.email" 
-              required>
-          </div>
-          <div class="mb-3">
-            <label for="codFiscale" class="form-label">{{ $t("codiceFiscale") }}</label>
-            <input 
-              type="text" 
-              id="codFiscale" 
-              class="form-control" 
-              v-model="autista.codfiscale" 
-              required>
-          </div>
-          <div class="mb-3">
-            <label for="numpatente" class="form-label">{{ $t("driverLicense") }}</label>
-            <input 
-              type="text" 
-              id="numpatente" 
-              class="form-control" 
-              v-model="autista.numpatente" 
-              required>
-          </div>
-          <div class="mb-3">
-            <label for="scadenzaPatente" class="form-label">{{ $t("driverLicenseExpiry") }}</label>
-             <VueDatePicker
-                    id="data"
-                    :enable-time-picker="false"
-                    auto-apply
-                    text-input
-                    format="dd/MM/yyyy"
-                    v-model="autista.scadenzapatente"
-                    locale="it"
-                  ></VueDatePicker>
-            
-          </div>
-          <button type="submit" class="btn btn-success w-100">{{ $t("save") }}</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
   <!-- modale cancellazione -->
   <div
     class="modal fade"
     id="modaleDelete"
     tabindex="-1"
-    aria-labelledby="modaleDeleteLabel"
+    aria-labelledby="modaleDeletelLabel"
     aria-hidden="true"
   >
     <div class="modal-dialog">
