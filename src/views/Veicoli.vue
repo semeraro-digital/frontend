@@ -37,7 +37,7 @@ const veicoloModifica = ref({
   scadenzaAssicurazione: ''
 });
 
-// Variabili per la modale di modifica corsa
+// Variabili per la modale di modifica VEICOLO
 const isModalOpen = ref(false);
 //const corsaModifica = ref({});
 const errorMessage = ref("");
@@ -236,10 +236,10 @@ const resetnewVeicolo = () => {
 
 //modale
 // Funzione per aprire la modale e caricare i dettagli della corsa
-const openEditModal = (corsa) => {
-  corsaModifica.value = { ...corsa }; // Cloniamo l'oggetto della corsa selezionata
+const openEditModal = (veicolo) => {
+  veicoloModifica.value = { ...veicolo }; // Cloniamo l'oggetto della corsa selezionata
 
-  console.log(corsaModifica.value);
+  console.log(veicoloModifica.value);
 
   isModalOpen.value = true; // Apriamo la modale
   errorMessage.value = "";
@@ -251,12 +251,12 @@ const saveChanges = async () => {
   try {
     const response = await axios.post(
       `${API_BASE_URL}/assegnazioni/modifica/`,
-      corsaModifica.value
+      veicoloModifica.value
     );
     if (response.status === 200) {
-      const index = corse.value.findIndex((c) => c.id === corsaModifica.value.id);
+      const index = corse.value.findIndex((c) => c.id === veicoloModifica.value.id);
       if (index !== -1) {
-        corse.value[index] = { ...corsaModifica.value }; // Aggiorniamo la corsa nella lista
+        corse.value[index] = { ...veicoloModifica.value }; // Aggiorniamo la corsa nella lista
       }
       successMessage.value = "Corsa aggiornata con successo!";
     }
@@ -270,26 +270,12 @@ const saveChanges = async () => {
 // Funzione per chiudere la modale senza salvare
 const closeModal = () => {
   isModalOpen.value = false;
-  corsaModifica.value = {};
+  veicoloModifica.value = {};
   aggiornaPagina();
 };
 </script>
 
 <template>
-  <div class="row mb-3">
-    <div class="col-lg-5">
-      <label for="dataFiltro">{{ $t("filterDate") }}</label>
-      <VueDatePicker
-        id="dataFiltro"
-        v-model="datafiltro"
-        :format="'dd/MM/yyyy'"
-        auto-apply
-        text-input
-        locale="it"
-        @update:model-value="aggiornaDataFiltro"
-      ></VueDatePicker>
-    </div>
-  </div>
 
   <div class="container-fluid">
     <!-- Messaggio di errore globale -->
@@ -334,15 +320,15 @@ const closeModal = () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-if="corse.length === 0">
+        <!--      <tr v-if="corse.length === 0">
                 <td class="text-center" colspan="7">{{ t("noCoursesAvailable") }}</td>
-              </tr>
+              </tr>-->
               <tr v-for="item in veicoli" :key="item.id">
                 <td>{{ item.modello }}</td>
                 <td>{{ item.capienza }}</td>
                 <td>{{ item.targa }} {{ item.targa }}</td>
                 <td>{{ formatDate(item.scadenzaBollo) }}</td>
-                <td>{{ formatTime(item.scadenzaAssicurazione) }}</td>
+                <td>{{ formatDate(item.scadenzaAssicurazione) }}</td>
                 <td class="text-right">
                   <button class="btn btn-primary" @click="openEditModal(item)">
                     <i class="fas fa-edit"></i>
@@ -433,7 +419,7 @@ const closeModal = () => {
     <div class="row">
       <div class="col text-right">
         <button @click="aggiungiVeicolo" class="btn btn-sm btn-success">
-          {{ $t("aggiungiCorse") }}
+          {{ $t("addVehicle") }}
         </button>
       </div>
     </div>
@@ -444,45 +430,45 @@ const closeModal = () => {
     <div class="modal-content">
       <h2>{{ $t("modificaCorsa") }}</h2>
 
-      <label for="data">{{ $t("departureDate") }}</label>
-      <VueDatePicker
-        id="data"
-        :enable-time-picker="true"
-        auto-apply
-        text-input
-        format="dd/MM/yyyy HH:mm:ss"
-        v-model="corsaModifica.datapartenza"
-        locale="it"
-      ></VueDatePicker>
-      <label for="tratta">{{ $t("tratta") }}</label>
-      <select id="tratte" v-model="corsaModifica.idtratta" @change="handleTrattaChange">
-        <option value="" disabled selected>...</option>
-        <option v-for="tratta in tratte" :key="tratta.id" :value="tratta.id">
-          {{ tratta.descrizione }}
-        </option>
-      </select>
-      <label for="autista">{{ $t("autista") }}</label>
-      <select id="autisti" v-model="corsaModifica.idautista" @change="handleTrattaChange">
-        <option value="" disabled selected>...</option>
-        <option v-for="autista in autisti" :key="autista.id" :value="autista.id">
-          {{ autista.nome }} {{ autista.cognome }}
-        </option>
-      </select>
-
-      <label for="mezz">{{ $t("mezzo") }}</label>
-      <select id="veicoli" v-model="corsaModifica.idmezzo" @change="handleTrattaChange">
-        <option value="" disabled selected>Seleziona un autista</option>
-        <option v-for="mezzo in veicoli" :key="mezzo.id" :value="mezzo.id">
-          {{ mezzo.modello }}
-        </option>
-      </select>
-
-      <label for="tutor">{{ $t("tutor") }}</label>
-      <input type="text" v-model="corsaModifica.tutor" placeholder="Nome Tutor" />
+     <label for="modello">{{ $t("model") }}</label>
+      <input type="text" v-model="veicoloModifica.modello" placeholder="" />
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+  <label for="capienza">{{ $t("capacity") }}</label>
+      <input type="number" v-model="veicoloModifica.capienza" placeholder="" />
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+  <label for="targa">{{ $t("licensePlate") }}</label>
+      <input type="targa" v-model="veicoloModifica.targa" placeholder="" />
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>
 
+      <label for="scadenzaBollo">{{ $t("taxDeadline") }}</label>
+      <VueDatePicker
+        id="scadenzaBollo"
+        :enable-time-picker="true"
+        auto-apply
+        text-input
+        format="dd/MM/yyyy"
+        v-model="veicoloModifica.scadenzaBollo"
+        locale="it"
+      ></VueDatePicker>
+      <label for="scadenzaBollo">{{ $t("insuranceDeadline") }}</label>
+      <VueDatePicker
+        id="scadenzaAssicurazione"
+        :enable-time-picker="true"
+        auto-apply
+        text-input
+        format="dd/MM/yyyy"
+        v-model="veicoloModifica.scadenzaAssicurazione"
+        locale="it"
+      ></VueDatePicker>
+
+
+ 
       <div v-if="successMessage" class="alert alert-success">
         {{ successMessage }}
       </div>
