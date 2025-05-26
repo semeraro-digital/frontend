@@ -149,6 +149,7 @@ function createMassiveRequest() {
     delete requestnewVeicolo.scadenzaassicurazione;
      delete requestnewVeicolo.scadenzabollo;
     request = [requestnewVeicolo];
+  }
      if (newVeicoli.value.length) {
     newVeicoli.value.forEach((nc) => {
       request.push(requestnewVeicolo);
