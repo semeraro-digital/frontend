@@ -68,8 +68,7 @@ const aggiornaDataFiltro = (nuovaData) => {
 
 const aggiornaPagina = async (id) => {
   resetnewVeicolo();
-  await loadCorse();
-  loadInfoCadenza();
+  await loadVeicoli();
 };
 
 
@@ -121,7 +120,7 @@ const aggiungiVeicolo= async () => {
     const request = createMassiveRequest();
 
     const response = await axios.post(
-      `${API_BASE_URL}/veicoli`,
+      `${API_BASE_URL}/veicoli/aggiungiAll`,
       request
     );
 
@@ -151,19 +150,7 @@ function createMassiveRequest() {
      delete requestnewVeicolo.scadenzabollo;
     request = [requestnewVeicolo];
   }
-  if (newVeicoli.value.length) {
-    newVeicoli.value.forEach((nc) => {
-      const ora = nc.tratta.ora.split(":");
-      request.push({
 
-          modello: nc.modello,
-  capienza: nc.capienza,
-  targa: nc.targa,
-  scadenzabollo: moment(nc.scadenzabollo) ,
-  scadenzaassicurazione:moment( nc.scadenzaassicurazione)
-      });
-    });
-  }
 
   return request;
 }
