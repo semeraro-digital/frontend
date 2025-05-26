@@ -36,6 +36,7 @@ const veicoloModifica = ref({
   scadenzaBollo: '',
   scadenzaAssicurazione: ''
 });
+const newVeicoli  = ref([]);
 
 // Variabili per la modale di modifica VEICOLO
 const isModalOpen = ref(false);
@@ -327,8 +328,8 @@ const closeModal = () => {
                 <td>{{ item.modello }}</td>
                 <td>{{ item.capienza }}</td>
                 <td>{{ item.targa }} {{ item.targa }}</td>
-                <td>{{ formatDate(item.scadenzaBollo) }}</td>
-                <td>{{ formatDate(item.scadenzaAssicurazione) }}</td>
+                <td>{{ formatDate(item.scadenzabollo) }}</td>
+                <td>{{ formatDate(item.scadenzaassicurazione) }}</td>
                 <td class="text-right">
                   <button class="btn btn-primary" @click="openEditModal(item)">
                     <i class="fas fa-edit"></i>
