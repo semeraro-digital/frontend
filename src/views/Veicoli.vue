@@ -26,15 +26,15 @@ const newVeicolo = ref({
   modello: '',
   capienza: '',
   targa: '',
-  scadenzaBollo: '',
-  scadenzaAssicurazione: ''
+  scadenzabollo: '',
+  scadenzaassicurazione: ''
 });
 const veicoloModifica = ref({
   modello: '',
   capienza: '',
   targa: '',
-  scadenzaBollo: '',
-  scadenzaAssicurazione: ''
+  scadenzabollo: '',
+  scadenzassicurazione: ''
 });
 const newVeicoli  = ref([]);
 
@@ -87,7 +87,6 @@ const loadVeicoli = async () => {
 
 
 // Veicoli
-const searchVeicoli = ref({});
 const veicoli = ref([]);
 
 
@@ -140,16 +139,16 @@ function createMassiveRequest() {
   let request = [];
   if (isAddingRow.value) {
     const requestnewVeicolo = JSON.parse(JSON.stringify(newVeicolo.value));
-    requestnewVeicolo.scadenzaAssicurazione = moment(requestnewVeicolo.scadenzaAssicurazione).format();
-     requestnewVeicolo.scadenzaBollo = moment(requestnewVeicolo.scadenzaBollo).format();
+    requestnewVeicolo.scadenzaassicurazione = moment(requestnewVeicolo.scadenzaassicurazione).format();
+     requestnewVeicolo.scadenzabollo = moment(requestnewVeicolo.scadenzabollo).format();
     requestnewVeicolo.targa = requestnewVeicolo.targa;
     requestnewVeicolo.capienza = requestnewVeicolo.capienza;
     requestnewVeicolo.modello = requestnewVeicolo.modello;
     delete requestnewVeicolo.modello;
     delete requestnewVeicolo.capienza;
     delete requestnewVeicolo.targa;
-    delete requestnewVeicolo.scadenzaAssicurazione;
-     delete requestnewVeicolo.scadenzaBollo;
+    delete requestnewVeicolo.scadenzaassicurazione;
+     delete requestnewVeicolo.scadenzabollo;
     request = [requestnewVeicolo];
   }
   if (newVeicoli.value.length) {
@@ -160,8 +159,8 @@ function createMassiveRequest() {
           modello: nc.modello,
   capienza: nc.capienza,
   targa: nc.targa,
-  scadenzaBollo: moment(nc.scadenzaBollo) ,
-  scadenzaAssicurazione:moment( nc.scadenzaAssicurazione)
+  scadenzabollo: moment(nc.scadenzabollo) ,
+  scadenzaassicurazione:moment( nc.scadenzaassicurazione)
       });
     });
   }
@@ -230,9 +229,6 @@ const resetnewVeicolo = () => {
     mezzo: {},
     tutor: "",
   };
-  searchVeicoli.value = "";
-  searchTratte.value = "";
-  searchAutisti.value = "";
 };
 
 //modale
@@ -348,8 +344,8 @@ const closeModal = () => {
                 <td>{{ item.modello }}</td>
                 <td>{{ item.capienza }}</td>
                 <td>{{ item.targa }}</td>
-                <td>{{ formatDate(item.scadenzaBollo) }}</td>
-                <td>{{ formatDate(item.scadenzaAssicurazione) }}</td>
+                <td>{{ formatDate(item.scadenzabollo) }}</td>
+                <td>{{ formatDate(item.scadenzaassicurazione) }}</td>
                 
                 <td class="text-right">
                   <button
@@ -386,23 +382,23 @@ const closeModal = () => {
                 </td>
                <td>
                   <VueDatePicker
-                    id="scadenzaBollo"
+                    id="scadenzabollo"
                     :enable-time-picker="false"
                     auto-apply
                     text-input
                     format="dd/MM/yyyy"
-                    v-model="newVeicolo.scadenzaBollo"
+                    v-model="newVeicolo.scadenzabollo"
                     locale="it"
                   ></VueDatePicker>
                 </td>
                  <td>
                   <VueDatePicker
-                    id="scadenzaAssicurazione"
+                    id="scadenzaassicurazione"
                     :enable-time-picker="false"
                     auto-apply
                     text-input
                     format="dd/MM/yyyy"
-                    v-model="newVeicolo.scadenzaAssicurazione"
+                    v-model="newVeicolo.scadenzaassicurazione"
                     locale="it"
                   ></VueDatePicker>
                 </td>
@@ -447,24 +443,24 @@ const closeModal = () => {
         {{ errorMessage }}
       </div>
 
-      <label for="scadenzaBollo">{{ $t("taxDeadline") }}</label>
+      <label for="scadenzabollo">{{ $t("taxDeadline") }}</label>
       <VueDatePicker
-        id="scadenzaBollo"
+        id="b"
         :enable-time-picker="true"
         auto-apply
         text-input
         format="dd/MM/yyyy"
-        v-model="veicoloModifica.scadenzaBollo"
+        v-model="veicoloModifica.scadenzabollo"
         locale="it"
       ></VueDatePicker>
-      <label for="scadenzaBollo">{{ $t("insuranceDeadline") }}</label>
+      <label for="scadenzabollo">{{ $t("insuranceDeadline") }}</label>
       <VueDatePicker
-        id="scadenzaAssicurazione"
+        id="scadenzaassicurazione"
         :enable-time-picker="true"
         auto-apply
         text-input
         format="dd/MM/yyyy"
-        v-model="veicoloModifica.scadenzaAssicurazione"
+        v-model="veicoloModifica.scadenzaassicurazione"
         locale="it"
       ></VueDatePicker>
 
