@@ -118,7 +118,7 @@ const cancelAddRow = () => {
 const aggiungiVeicolo= async () => {
   try {
     const request = createMassiveRequest();
-
+console.log("request "+request);
     const response = await axios.post(
       `${API_BASE_URL}/veicoli/aggiungiAll`,
       request
@@ -143,72 +143,15 @@ function createMassiveRequest() {
     requestnewVeicolo.targa = requestnewVeicolo.targa;
     requestnewVeicolo.capienza = requestnewVeicolo.capienza;
     requestnewVeicolo.modello = requestnewVeicolo.modello;
-    delete requestnewVeicolo.modello;
-    delete requestnewVeicolo.capienza;
-    delete requestnewVeicolo.targa;
-    delete requestnewVeicolo.scadenzaassicurazione;
-     delete requestnewVeicolo.scadenzabollo;
     request = [requestnewVeicolo];
   }
-     if (newVeicoli.value.length) {
-    newVeicoli.value.forEach((nc) => {
-      request.push(requestnewVeicolo);
-    });
-  }
-
-
   return request;
 }
 
-function filtraTratte() {
-  const giorno = moment(newVeicolo.value.datapartenza)
-    .locale("en")
-    .format("ddd")
-    .toUpperCase();
-  tratteFiltrate.value = _.cloneDeep(tratte.value);
 
-  _.remove(tratteFiltrate.value, (tratta) => {
-    console.log(tratta.ora + " " + tratta.cadenza + " " + tratta.descrizione);
-    let esiste = false;
-
-    const cadenzaMatch = tratta.cadenza.indexOf(giorno) >= 0;
-    if (!tratta.ora) {
-      return true;
-    }
-    const existing = _.some(corse.value, (corsa) => {
-      if (!esiste) {
-        esiste =
-          tratta.id === corsa.idtratta &&
-          moment(corsa.datapartenza).isSame(datafiltro.value, "day") &&
-          moment(corsa.datapartenza).format("HH:mm") === tratta.ora;
-      }
-    });
-    // console.log("esiste "+esiste+" cadenzaMatch "+cadenzaMatch)
-    return !cadenzaMatch || esiste;
-  });
-}
 const nuovoDatoCorse = null;
 
-const loadInfoCadenza = () => {
-  filtraTratte();
-  // Ciclare su ciascuna tratta filtrata e aggiungere una lista di nuovi oggetti corse
-  const corseAggiunte = tratteFiltrate.value.map((tratta) => {
-    tratta.datapartenza = datafiltro;
-    return {
-      tutor: tratta.tutor, // Usa la descrizione della tratta
-      tratta: tratta, // Aggiungi il riferimento alla tratta
-      autista: {},
-      mezzo: {},
-    };
-  });
-  addTratteAnewVeicoli(corseAggiunte);
-};
 
-function addTratteAnewVeicoli(corseDaaggiungere) {
-  corseDaaggiungere.forEach((cor) => {
-    newVeicoli.value.push(cor);
-  });
-}
 
 // Reset dei campi di newVeicolo
 const resetnewVeicolo = () => {
