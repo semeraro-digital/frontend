@@ -182,7 +182,7 @@ const openEditModal = (veicolo) => {
 const saveChanges = async () => {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/assegnazioni/modifica/`,
+      `${API_BASE_URL}/veicoli/modifica/`,
       veicoloModifica.value
     );
     if (response.status === 200) {
