@@ -25,20 +25,20 @@ const getTodayDate = () => {
 const newAutista = ref({
   nome: "",
   cognome: "",
-  codFiscale: "",
-  scadenzaPatente: "",
+  codfiscale: "",
+  scadenzapatente: "",
   email: "",
   telefono: "",
-  numPatente: "",
+  numpatente: "",
 });
 const autistaModifica = ref({
   nome: "",
   cognome: "",
-  codFiscale: "",
-  scadenzaPatente: "",
+  codfiscale: "",
+  scadenzapatente: "",
   email: "",
   telefono: "",
-  numPatente: "",
+  numpatente: "",
 });
 const newAutisti  = ref([]);
 
@@ -144,11 +144,11 @@ function createMassiveRequest() {
     const requestnewAutista = JSON.parse(JSON.stringify(newAutista.value));
     requestnewAutista.nome = requestnewAutista.nome;
     requestnewAutista.cognome = requestnewAutista.cognome;
-    requestnewAutista.codFiscale = requestnewAutista.codFiscale;
-    requestnewAutista.scadenzaPatente = moment(requestnewAutista.scadenzaPatente).format();
+    requestnewAutista.codfiscale = requestnewAutista.codfiscale;
+    requestnewAutista.scadenzapatente = moment(requestnewAutista.scadenzapatente).format();
     requestnewAutista.email = requestnewAutista.email;
     requestnewAutista.telefono = requestnewAutista.telefono;
-    requestnewAutista.numPatente = requestnewAutista.numPatente;
+    requestnewAutista.numpatente = requestnewAutista.numpatente;
     request = [requestnewAutista];
   }
   return request;
@@ -165,11 +165,11 @@ const resetnewAutista = () => {
   newAutista.value = {
   nome: "",
   cognome: "",
-  codFiscale: "",
-  scadenzaPatente: "",
+  codfiscale: "",
+  scadenzapatente: "",
   email: "",
   telefono: "",
-  numPatente: "",
+  numpatente: "",
   };
 };
 
@@ -248,7 +248,7 @@ const closeModal = () => {
                 <th scope="col">{{ $t("driverLastName") }}</th>
                 <th scope="col">{{ $t("codiceFiscale") }}</th>
                 <th scope="col">{{ $t("driverLicenseExpiry") }}</th>
-                <th scope="col">{{ $t("numPatente") }}</th>
+                <th scope="col">{{ $t("numpatente") }}</th>
                 <th scope="col">{{ $t("driverEmail") }}</th>
                 <th scope="col">{{ $t("enterPhone") }}</th>
                 <th scope="col" class="text-right">
@@ -267,9 +267,9 @@ const closeModal = () => {
               <tr v-for="item in autisti" :key="item.id">
                 <td>{{ item.nome }}</td>
                 <td>{{ item.cognome }}</td>
-                <td>{{ item.codFiscale }}</td>
-                <td>{{ formatDate(item.scadenzaPatente) }}</td>
-                 <td>{{ item.numPatente }}</td>
+                <td>{{ item.codfiscale }}</td>
+                <td>{{ formatDate(item.scadenzapatente) }}</td>
+                 <td>{{ item.numpatente }}</td>
           <td>{{ item.email }}</td>
          <td>{{ item.telefono }}</td>
                 <td class="text-right">
@@ -289,9 +289,9 @@ const closeModal = () => {
               <tr v-for="(item, index) in newAutisti" :key="'new' + item.id">
           <td>{{ item.nome }}</td>
                 <td>{{ item.cognome }}</td>
-                <td>{{ item.codFiscale }}</td>
-                <td>{{ formatDate(item.scadenzaPatente) }}</td>
-                 <td>{{ item.numPatente }}</td>
+                <td>{{ item.codfiscale }}</td>
+                <td>{{ formatDate(item.scadenzapatente) }}</td>
+                 <td>{{ item.numpatente }}</td>
           <td>{{ item.email }}</td>
          <td>{{ item.telefono }}</td>
                 
@@ -324,7 +324,7 @@ const closeModal = () => {
                 </td>
                 <td>
                   <input
-                    v-model="newAutista.codFiscale"
+                    v-model="newAutista.codfiscale"
                     class="form-control"
                     placeholder=""
                   />
@@ -332,18 +332,18 @@ const closeModal = () => {
                 </td>
                <td>
                   <VueDatePicker
-                    id="scadenzaPatente"
+                    id="scadenzapatente"
                     :enable-time-picker="false"
                     auto-apply
                     text-input
                     format="dd/MM/yyyy"
-                    v-model="newAutista.scadenzabollo"
+                    v-model="newAutista.scadenzapatente"
                     locale="it"
                   ></VueDatePicker>
                 </td>
                 <td>
                   <input
-                    v-model="newAutista.numPatente"
+                    v-model="newAutista.numpatente"
                     class="form-control"
                     placeholder=""
                   />
@@ -397,26 +397,26 @@ const closeModal = () => {
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>
-        <label for="codFiscale">{{ $t("codiceFiscale") }}</label>
-      <input type="text" v-model="autistaModifica.codFiscale" placeholder="" />
+        <label for="codfiscale">{{ $t("codiceFiscale") }}</label>
+      <input type="text" v-model="autistaModifica.codfiscale" placeholder="" />
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>
 
 
-      <label for="scadenzaPatente">{{ $t("driverLicenseExpiry") }}</label>
+      <label for="scadenzapatente">{{ $t("driverLicenseExpiry") }}</label>
       <VueDatePicker
         id="b"
         :enable-time-picker="true"
         auto-apply
         text-input
         format="dd/MM/yyyy"
-        v-model="autistaModifica.scadenzaPatente"
+        v-model="autistaModifica.scadenzapatente"
         locale="it"
       ></VueDatePicker>
 
-        <label for="numPatente">{{ $t("enterLicenseNumber") }}</label>
-      <input type="text" v-model="autistaModifica.numPatente" placeholder="" />
+        <label for="numpatente">{{ $t("enterLicenseNumber") }}</label>
+      <input type="text" v-model="autistaModifica.numpatente" placeholder="" />
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>
