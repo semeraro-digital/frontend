@@ -1,16 +1,28 @@
+<!--#### pagina autisti  -->
 <script setup>
+import moment from "moment";
+import "moment/locale/it";
 import axios from "axios";
-import defaultImage from "@/assets/avatar1.png";
-import iconapng from "@/assets/icona.png";
-import { Modal } from "bootstrap";
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import _ from "lodash";
 
-// Importa la variabile API_BASE_URL dall'ambiente
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Assicurati che questa variabile sia definita nel file .env
+const { t } = useI18n();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const corse = ref([]);
+const error = ref(null);
 
-let autisti = ref([]);
-let error = ref(null);
-let newAutista = ref({
+const isAddingRow = ref(false);
+const isLoading = ref(false);
+const datafiltro = ref(moment());
+
+// Funzione per ottenere la data odierna in formato YYYY-MM-DD
+const getTodayDate = () => {
+  const today = new Date();
+  return today.toISOString().split("T")[0]; // Restituisce la data nel formato corretto
+};
+
+const newAutista = ref({
   nome: "",
   cognome: "",
   codFiscale: "",
@@ -19,304 +31,498 @@ let newAutista = ref({
   telefono: "",
   numPatente: "",
 });
+const autistaModifica = ref({
+  nome: "",
+  cognome: "",
+  codFiscale: "",
+  scadenzaPatente: "",
+  email: "",
+  telefono: "",
+  numPatente: "",
+});
+const newAutisti  = ref([]);
 
-onMounted(() => {
-  autisti.value.splice(0);
-  axios
-    .get(`${API_BASE_URL}/autisti`) // Utilizza la variabile API_BASE_URL
-    .then((response) => {
-      autisti.value.push(...response.data);
-    })
-    .catch((err) => {
-      error.value = err.response ? err.response.data.message : err.message; // Usa error.value
-      console.error("Errore durante la chiamata API:", err);
-    });
+// Variabili per la modale di modifica VEICOLO
+const isModalOpen = ref(false);
+//const corsaModifica = ref({});
+const errorMessage = ref("");
+const successMessage = ref("");
+
+// Funzione per formattare la data
+function formatDate(dateString) {
+  return moment(dateString).format("DD/MM/YYYY");
+}
+
+// Funzione per gestire il cambio della data
+
+// Funzione per formattare l'ora
+function formatTime(dateString) {
+  return moment(dateString).format("HH:mm");
+}
+
+// Funzione per caricare le corse all'avvio
+onMounted(async () => {
+  loadAutisti(); 
 });
 
-function openAddAutistaModal() {
+const aggiornaDataFiltro = (nuovaData) => {
+  datafiltro.value = moment(nuovaData).startOf("day");
+  aggiornaPagina();
+};
+
+const aggiornaPagina = async (id) => {
+  resetnewAutista();
+  await loadAutisti();
+};
+
+
+const loadAutisti = async () => {
   try {
-    const modalElement = document.getElementById("addAutistaModal");
-    if (!modalElement) {
-      console.error("Elemento modale non trovato nel DOM");
-      return;
-    }
-    const modal = Modal.getOrCreateInstance(modalElement);
-    modal.show();
-  } catch (error) {
-    console.error("Errore nell'apertura della modale:", error);
-  }
-}
-
-async function saveAutista() {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/autisti/add`, newAutista.value); // Usa la variabile API_BASE_URL
-
-    const modalElement = document.getElementById("addAutistaModal");
-    const modal = Modal.getInstance(modalElement);
-    if (modal) {
-      modal.hide();
-    }
-    autisti.value.push(JSON.parse(JSON.stringify(newAutista.value)));
-
-    // Reset dei campi dopo il salvataggio
-    newAutista.value = {
-      nome: "",
-      cognome: "",
-      codFiscale: "",
-      scadenzaPatente: "",
-      email: "",
-      telefono: "",
-      numPatente: "",
-    };
+    isLoading.value = true;
+    const response = await axios.get(`${API_BASE_URL}/autisti`);
+    autisti.value = response.data;
   } catch (err) {
-    console.error("Errore durante l'aggiunta dell'autista:", err);
-    error.value = err.response ? err.response.data.message : err.message; // Usa error.value
+    error.value = err.response ? err.response.data.message : err.message;
+  } finally {
+    isLoading.value = false;
   }
+};
+
+
+// autisti
+const autisti = ref([]);
+
+
+// Funzione per eliminare una corsa
+const eliminaAutista = async (id) => {
+  if (confirm(t("confirmDelete"))) {
+    try {
+      await axios.delete(`${API_BASE_URL}/autisti/${id}`);
+
+      // Reload assignments
+      await aggiornaPagina();
+    } catch (err) {
+      error.value = err.response ? err.response.data.message : err.message;
+    }
+  }
+};
+
+// Mostra la riga di inserimento
+const openAddRowModal = () => {
+  isAddingRow.value = true;
+};
+
+// Nascondi la riga di inserimento
+const cancelAddRow = () => {
+  isAddingRow.value = false;
+  resetnewAutista();
+};
+
+// Aggiungi una nuova corsa
+const aggiungiAutista= async () => {
+  try {
+    const request = createMassiveRequest();
+console.log("request "+request);
+    const response = await axios.post(
+      `${API_BASE_URL}/autisti/aggiungiAll`,
+      request
+    );
+
+    isAddingRow.value = false; // Nascondi la riga di inserimento
+    resetnewAutista(); // Resetta i campi del form
+    // Reload assignments
+    await aggiornaPagina();
+  } catch (err) {
+    console.log(err);
+    error.value = err.response ? err.response.data.message : err.message;
+  }
+};
+
+function createMassiveRequest() {
+  let request = [];
+  if (isAddingRow.value) {
+    const requestnewAutista = JSON.parse(JSON.stringify(newAutista.value));
+    requestnewAutista.nome = requestnewAutista.nome;
+    requestnewAutista.cognome = requestnewAutista.cognome;
+    requestnewAutista.codFiscale = requestnewAutista.codFiscale;
+    requestnewAutista.scadenzaPatente = moment(requestnewAutista.scadenzaPatente).format();
+    requestnewAutista.email = requestnewAutista.email;
+    requestnewAutista.telefono = requestnewAutista.telefono;
+    requestnewAutista.numPatente = requestnewAutista.numPatente;
+    request = [requestnewAutista];
+  }
+  return request;
 }
+
+
+const nuovoDatoAutista = null;
+
+
+
+// Reset dei campi di newAutista
+const resetnewAutista = () => {
+  newAutisti.value = [];
+  newAutista.value = {
+  nome: "",
+  cognome: "",
+  codFiscale: "",
+  scadenzaPatente: "",
+  email: "",
+  telefono: "",
+  numPatente: "",
+  };
+};
+
+//modale
+// Funzione per aprire la modale e caricare i dettagli della corsa
+const openEditModal = (autista) => {
+  autistaModifica.value = { ...autista }; // Cloniamo l'oggetto della corsa selezionata
+
+  console.log(autistaModifica.value);
+
+  isModalOpen.value = true; // Apriamo la modale
+  errorMessage.value = "";
+  successMessage.value = "";
+};
+
+// Funzione per salvare le modifiche della corsa
+const saveChanges = async () => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/autisti/modifica/`,
+      autistaModifica.value
+    );
+    if (response.status === 200) {
+      const index = autista.value.findIndex((c) => c.id === autistaModifica.value.id);
+      if (index !== -1) {
+        autista.value[index] = { ...autistaModifica.value }; // Aggiorniamo la corsa nella lista
+      }
+      successMessage.value = "Corsa aggiornata con successo!";
+    }
+    closeModal();
+  } catch (error) {
+    console.error("Errore durante l'aggiornamento della corsa:", error);
+    errorMessage.value = "Si è verificato un errore durante l'aggiornamento della corsa.";
+  }
+};
+
+// Funzione per chiudere la modale senza salvare
+const closeModal = () => {
+  isModalOpen.value = false;
+  autistaModifica.value = {};
+  aggiornaPagina();
+};
 </script>
 
 <template>
+
   <div class="container-fluid">
-    <div class="row">
-      <div class="col">
-        <h1 class="h3 mb-0 text-gray-800">{{ $t("drivers") }}</h1>
-        <!-- Aggiungi l'internazionalizzazione -->
-      </div>
-    </div>
-  </div>
-  <div class="container-fluid">
+    <!-- Messaggio di errore globale -->
     <div
       v-if="error"
       class="alert alert-danger text-center"
       role="alert"
       style="margin-top: 20px"
     >
-      {{ $t("errorLoadingDrivers", { error }) }}
-      <!-- Aggiungi l'internazionalizzazione -->
+      {{ $t("errorLoadingData", { error }) }}
     </div>
 
-    <div
-      v-if="!error"
-      class="row row-cols-1 row-cols-lg-2 row-cols-xl-4"
-      style="margin-top: 20px"
-    >
-      <div v-if="autisti.length === 0" class="col-12 text-center">
-        <p>{{ $t("noDriversAvailable") }}</p>
-        <!-- Aggiungi l'internazionalizzazione -->
+    <!-- Spinner di caricamento -->
+    <div v-if="isLoading" class="text-center" style="margin-top: 20px">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
+      <p>{{ $t("loadingData") }}</p>
+    </div>
 
-      <div v-for="item in autisti" :key="item.id" class="col mb-4">
-        <RouterLink :to="`/autisti/${item.id}`">
-          <div :class="['card', 'radius-15', 'bg-secondary-light', 'autisti']">
-            <div class="card-body text-center">
-              <div class="radius-15">
-                <img
-                  :src="defaultImage"
-                  width="110"
-                  height="110"
-                  class="rounded-circle shadow p-1 bg-white float-left mr-2"
-                  alt="Immagine Autista"
-                />
-                <h5 class="mb-0">{{ item.nome }} {{ item.cognome }}</h5>
-                <p class="mb-3">{{ $t("driver") }}</p>
-                <!-- Aggiungi l'internazionalizzazione -->
-              </div>
-            </div>
-          </div>
-        </RouterLink>
-      </div>
+    <div class="row">
+      <div class="col">
+        <div v-if="!error && !isLoading">
+          <table
+            class="table table-striped table-sm custom-table"
+            style="margin-top: 20px"
+          >
+            <thead class="thead-light">
+              <tr>
+                <th scope="col">{{ $t("driverName") }}</th>
+                <th scope="col">{{ $t("driverLastName") }}</th>
+                <th scope="col">{{ $t("codiceFiscale") }}</th>
+                <th scope="col">{{ $t("driverLicenseExpiry") }}</th>
+                <th scope="col">{{ $t("numPatente") }}</th>
+                <th scope="col">{{ $t("driverEmail") }}</th>
+                <th scope="col">{{ $t("enterPhone") }}</th>
+                <th scope="col" class="text-right">
+                  <!-- Pulsante "+" per aggiungere una nuova riga -->
+                  <button @click="openAddRowModal" class="btn btn-sm btn-primary">
+                    <i class="fa fa-plus"></i>
+                  </button>
+                </th>
+                <th scope="col" class="text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+        <!--      <tr v-if="corse.length === 0">
+                <td class="text-center" colspan="7">{{ t("noCoursesAvailable") }}</td>
+              </tr>-->
+              <tr v-for="item in autisti" :key="item.id">
+                <td>{{ item.nome }}</td>
+                <td>{{ item.cognome }}</td>
+                <td>{{ item.codFiscale }}</td>
+                <td>{{ formatDate(item.scadenzaPatente) }}</td>
+                 <td>{{ item.numPatente }}</td>
+          <td>{{ item.email }}</td>
+         <td>{{ item.telefono }}</td>
+                <td class="text-right">
+                  <button class="btn btn-primary" @click="openEditModal(item)">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </td>
+                <td class="text-left">
+                  <button
+                    @click="eliminaAutista(item.id)"
+                    class="btn btn-sm btn-danger"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr v-for="(item, index) in newAutisti" :key="'new' + item.id">
+          <td>{{ item.nome }}</td>
+                <td>{{ item.cognome }}</td>
+                <td>{{ item.codFiscale }}</td>
+                <td>{{ formatDate(item.scadenzaPatente) }}</td>
+                 <td>{{ item.numPatente }}</td>
+          <td>{{ item.email }}</td>
+         <td>{{ item.telefono }}</td>
+                
 
-      <!-- Card per aggiungere un autista -->
-      <div class="col mb-4">
-        <div :class="['card', 'radius-15', 'autisti']" @click="openAddAutistaModal">
-          <div class="card-body text-center">
-            <div class="radius-15">
-              <img
-                :src="iconapng"
-                width="110"
-                height="110"
-                class="rounded-circle shadow p-1 bg-white float-left mr-2"
-                alt="Aggiungi Autista"
-              />
-              <h5 class="mb-0 text-white">{{ $t("addDriver") }}</h5>
-              <!-- Aggiungi l'internazionalizzazione -->
-              <p class="mb-3">{{ $t("createNewDriver") }}</p>
-              <!-- Aggiungi l'internazionalizzazione -->
-            </div>
-          </div>
+                
+                <td class="text-right">
+                  <button
+                    @click="() => newAutisti.splice(index, 1)"
+                    class="btn btn-sm btn-secondary mr-1"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                </td>
+              </tr>
+              <!-- Riga per l'inserimento della nuova corsa -->
+              <tr v-if="isAddingRow">
+                <td>
+             <input
+                    v-model="newAutista.nome"
+                    class="form-control"
+                    placeholder=""
+                  />
+                </td>
+                <td>
+                  <input
+                    v-model="newAutista.cognome"
+                    class="form-control"
+                    placeholder=""
+                  />
+                </td>
+                <td>
+                  <input
+                    v-model="newAutista.codFiscale"
+                    class="form-control"
+                    placeholder=""
+                  />
+             
+                </td>
+               <td>
+                  <VueDatePicker
+                    id="scadenzaPatente"
+                    :enable-time-picker="false"
+                    auto-apply
+                    text-input
+                    format="dd/MM/yyyy"
+                    v-model="newAutista.scadenzabollo"
+                    locale="it"
+                  ></VueDatePicker>
+                </td>
+                <td>
+                  <input
+                    v-model="newAutista.numPatente"
+                    class="form-control"
+                    placeholder=""
+                  />
+                </td>
+                <td>
+                  <input
+                    v-model="newAutista.email"
+                    class="form-control"
+                    placeholder=""
+                  />
+                </td>
+                <td>
+                  <input
+                    v-model="newAutista.telefono"
+                    class="form-control"
+                    placeholder=""
+                  />
+                </td>
+                <td style="width: 100px" class="text-right">
+                  <button @click="cancelAddRow" class="btn btn-sm btn-secondary mr-1">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
+    <div class="row">
+      <div class="col text-right">
+        <button @click="aggiungiAutista" class="btn btn-sm btn-success">
+          {{ $t("addDriver") }}
+        </button>
+      </div>
+    </div>
+  </div>
 
-    <!-- Modale per aggiungere un autista -->
-    <div
-      class="modal fade"
-      id="addAutistaModal"
-      tabindex="-1"
-      aria-labelledby="addAutistaModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <form @submit.prevent="saveAutista">
-            <div class="modal-header">
-              <h5 class="modal-title" id="addAutistaModalLabel">{{ $t("addDriver") }}</h5>
-              <!-- Aggiungi l'internazionalizzazione -->
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <div class="row">
-                <div class="col-6">
-                  <div class="mb-3">
-                    <label for="nome" class="form-label">{{ $t("driverName") }}</label>
-                    <input
-                      type="text"
-                      id="nome"
-                      v-model="newAutista.nome"
-                      class="form-control"
-                      :placeholder="$t('enterName')"
-                      required
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="cognome" class="form-label">{{
-                      $t("driverLastName")
-                    }}</label>
-                    <input
-                      type="text"
-                      id="cognome"
-                      v-model="newAutista.cognome"
-                      class="form-control"
-                      :placeholder="$t('enterLastName')"
-                      required
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="codFiscale" class="form-label">{{
-                      $t("codiceFiscale")
-                    }}</label>
-                    <input
-                      type="text"
-                      id="codFiscale"
-                      v-model="newAutista.codFiscale"
-                      class="form-control"
-                      :placeholder="$t('entercodiceFiscale')"
-                      required
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="scadenzaPatente" class="form-label">{{
-                      $t("driverLicenseExpiry")
-                    }}</label>
-                    <VueDatePicker
-                        id="scadenzaPatente"
-                        :enable-time-picker="false"
-                        auto-apply
-                        text-input
-                        format="dd/MM/yyyy"
-                        v-model="newAutista.scadenzaPatente"
-                        locale="it"
-                    ></VueDatePicker>
-                  </div>
-                </div>
-                <div class="col-6">
-                  <div class="mb-3">
-                    <label for="numPatente" class="form-label">{{
-                      $t("driverLicense")
-                    }}</label>
-                    <input
-                      type="text"
-                      id="numPatente"
-                      v-model="newAutista.numPatente"
-                      class="form-control"
-                      :placeholder="$t('enterLicenseNumber')"
-                      required
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="email" class="form-label">{{ $t("driverEmail") }}</label>
-                    <input
-                      type="text"
-                      id="email"
-                      v-model="newAutista.email"
-                      class="form-control"
-                      :placeholder="$t('enterEmail')"
-                      required
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="telefono" class="form-label">{{
-                      $t("driverPhone")
-                    }}</label>
-                    <input
-                      type="text"
-                      id="telefono"
-                      v-model="newAutista.telefono"
-                      class="form-control"
-                      :placeholder="$t('enterPhone')"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                {{ $t("close") }}
-              </button>
-              <!-- Aggiungi l'internazionalizzazione -->
-              <button type="submit" class="btn btn-primary">{{ $t("save") }}</button>
-              <!-- Aggiungi l'internazionalizzazione -->
-            </div>
-          </form>
-        </div>
+  <!-- Modale di modifica  -->
+  <div v-if="isModalOpen" class="modal">
+    <div class="modal-content">
+      <h2>{{ $t("modificaCorsa") }}</h2>
+
+     <label for="nome">{{ $t("driverName") }}</label>
+      <input type="text" v-model="autistaModifica.nome" placeholder="" />
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+  <label for="cognome">{{ $t("driverLastName") }}</label>
+      <input type="text" v-model="autistaModifica.cognome" placeholder="" />
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+        <label for="codFiscale">{{ $t("codiceFiscale") }}</label>
+      <input type="text" v-model="autistaModifica.codFiscale" placeholder="" />
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+
+
+      <label for="scadenzaPatente">{{ $t("driverLicenseExpiry") }}</label>
+      <VueDatePicker
+        id="b"
+        :enable-time-picker="true"
+        auto-apply
+        text-input
+        format="dd/MM/yyyy"
+        v-model="autistaModifica.scadenzaPatente"
+        locale="it"
+      ></VueDatePicker>
+
+        <label for="numPatente">{{ $t("enterLicenseNumber") }}</label>
+      <input type="text" v-model="autistaModifica.numPatente" placeholder="" />
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+        <label for="email">{{ $t("driverEmail") }}</label>
+      <input type="text" v-model="autistaModifica.email" placeholder="" />
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+
+        <label for="telefono">{{ $t("driverPhone") }}</label>
+      <input type="text" v-model="autistaModifica.telefono" placeholder="" />
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+
+
+ 
+      <div v-if="successMessage" class="alert alert-success">
+        {{ successMessage }}
+      </div>
+      <div style="height: 20px"></div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button @click="saveChanges" class="btn btn-sm btn-primary">
+          {{ $t("save") }}
+        </button>
+        <button @click="closeModal" class="btn btn-sm btn-secondary">
+          {{ $t("close") }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.card-title {
-  font-size: 1.25rem;
-  margin-bottom: 0;
-}
-
-.autisti-img-profile {
-  float: left;
-}
-
-.d-flex {
-  display: flex;
-  align-items: center;
-}
-
-.ms-3 {
-  margin-left: 1rem;
-}
-
-.container {
+.container-fluid {
   margin-top: 20px;
 }
 
-.card {
-  border: 1px solid #ccc;
-  border-radius: 8px;
+.custom-table {
+  margin-top: 20px;
 }
 
-.custom-card {
-  width: 250px;
+.autocomplete-options {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #ddd;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 1000;
+  width: 100%;
 }
 
-.bg-secondary-light {
-  background-color: #dfe6e9;
+.autocomplete-item {
+  padding: 8px;
+  cursor: pointer;
 }
 
-.card.autisti:hover {
-  border: solid 1px;
+.autocomplete-item:hover {
+  background-color: #f0f0f0;
+}
+/* Modale */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 300px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+button {
+  padding: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #f0f0f0;
+}
+
+/* Messaggi di errore */
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Messaggi di successo */
+.success-message {
+  color: green;
+  font-size: 14px;
+  margin-top: 10px;
 }
 </style>
