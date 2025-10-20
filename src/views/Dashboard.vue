@@ -5,7 +5,6 @@ import _ from "lodash";
 import moment from "moment";
 import { ref } from "vue";
 
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Variabile per controllare se il bottone è disabilitato
 const isButtonDisabled = ref(false);
@@ -18,7 +17,17 @@ export default {
       veicoli: [],
       veicoliScadenza: [],
       assegnazioni: [], // Now reactive and part of the component state
-      error: null,
+      errors: {
+        autisti: null,
+        autistiScadenza: null,
+        veicoli: null,
+        veicoliScadenza: null,
+        assegnazioni: null,
+        sendOggiEmail: null,
+        sendDomaniEmail: null,
+        sendOggiWA: null,
+        sendDomaniWA: null,
+      },
       filteredAssegnazioni: [], // to store filtered results
       turniData: {
         dataInizio: moment().format("YYYY-MM-DDT00:00:00"),
@@ -43,7 +52,7 @@ export default {
   },
   methods: {
     formatData(data) {
-      return moment(data).format('DD/yyyy HH:mm');
+      return moment(data).format("DD/yyyy HH:mm");
     },
     fetchAutisti() {
       axios
@@ -56,8 +65,8 @@ export default {
           });
         })
         .catch((error) => {
-          this.error = error.response ? error.response.data.message : error.message;
-          console.error("Errore durante la chiamata API:", error);
+          this.setError("autisti", error); // <--
+          console.error("API autisti:", error);
         });
     },
     fetchAutistiScadenza() {
@@ -68,8 +77,8 @@ export default {
         })
 
         .catch((error) => {
-          this.error = error.response ? error.response.data.message : error.message;
-          console.error("Errore durante la chiamata API:", error);
+          this.setError("autistiScadenza", error); // <--
+          console.error("API autistiScadenza:", error);
         });
     },
 
@@ -98,7 +107,6 @@ export default {
               toastTrigger.disabled = false;
             }
           });
-
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -140,7 +148,6 @@ export default {
               toastTrigger.disabled = false;
             }
           });
-
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -186,7 +193,6 @@ export default {
               toastTrigger.disabled = false;
             }
           });
-
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -228,7 +234,6 @@ export default {
               toastTrigger.disabled = false;
             }
           });
-
         })
         .catch((error) => {
           if (toastLiveError) {
@@ -272,8 +277,8 @@ export default {
           this.veicoli = response.data;
         })
         .catch((error) => {
-          this.error = error.response ? error.response.data.message : error.message;
-          console.error("Errore durante la chiamata API:", error);
+          this.setError("veicoli", error); // <--
+          console.error("API veicoli:", error);
         });
     },
     fetchVeicoliScadenza() {
@@ -283,8 +288,8 @@ export default {
           this.veicoliScadenza = response.data;
         })
         .catch((error) => {
-          this.error = error.response ? error.response.data.message : error.message;
-          console.error("Errore durante la chiamata API:", error);
+          this.setError("veicoliScadenza", error); // <--
+          console.error("API veicoliScadenza:", error);
         });
     },
 
@@ -308,8 +313,8 @@ export default {
             resolve(); // Risolvi la promise quando i dati sono stati caricati
           })
           .catch((error) => {
-            this.error = error.response ? error.response.data.message : error.message;
-            console.error("Errore durante la chiamata API:", error);
+            this.setError("assegnazioni", error); // <--
+            console.error("API assegnazioni:", error);
             reject(error); // Rifiuta la promise in caso di errore
           });
       });
@@ -332,6 +337,24 @@ export default {
         const dataPartenza = new Date(assegnazione.datapartenza);
         return dataPartenza >= startDate && dataPartenza <= endDate;
       });
+    },
+    extractErr(error) {
+      return error?.response?.data?.message || error?.message || "Errore sconosciuto";
+    },
+    showErrorToast(msg, toastId = "ToastError") {
+      const el = document.getElementById(toastId);
+      if (!el) return;
+      const body = el.querySelector(".toast-body");
+      if (body) body.textContent = msg;
+      Toast.getOrCreateInstance(el).show();
+    },
+    setError(section, error, toastId) {
+      const msg = this.extractErr(error);
+      this.errors[section] = msg;
+      if (toastId) this.showErrorToast(msg, toastId);
+    },
+    clearError(section) {
+      this.errors[section] = null;
     },
   },
 };
@@ -552,8 +575,8 @@ export default {
       <!--      </div>-->
 
       <div class="col-12">
-      <!--turni oggi-->
-      <div class="dashboard-section">
+        <!--turni oggi-->
+        <div class="dashboard-section">
           <h2 class="section-header">{{ $t("turnioggi") }}</h2>
 
           <label for="dataFilter">{{ $t("FiltraData") }}</label>
@@ -562,40 +585,39 @@ export default {
             <option value="tomorrow">{{ $t("domani") }}</option>
           </select>
 
-          <div v-if="error" class="alert alert-danger">{{ error }}</div>
+         <div v-if="errors.assegnazioni" class="alert alert-danger">{{ errors.assegnazioni }}</div>
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-striped  table-sm">
               <thead>
                 <tr>
-                  <th>{{ $t("vehicle") }}</th>
                   <th>{{ $t("departureDate") }}</th>
                   <th>{{ $t("autista") }}</th>
                   <th>{{ $t("tratta") }}</th>
+                  <th>{{ $t("vehicle") }}</th>
                   <th>{{ $t("tutor") }}</th>
-                  <th>{{ $t("email") }}</th>
-                  <th>{{ $t("sendEmail") }}</th>
-                 
+                  <th>{{ $t("driverPhone") }}</th>
+                  <th>{{ $t("sendWA") }}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="small">
                 <tr v-for="assegnazione in filteredAssegnazioni" :key="assegnazione.id">
-                  <td>{{ assegnazione.modelloveicolo }}</td>
-                 <td>{{ formatData(assegnazione.datapartenza) }}</td>
-                  <td>{{ assegnazione.nomeautista }} {{ assegnazione.cognomeautista }}</td>
+                  
+                  <td>{{ formatData(assegnazione.datapartenza) }}</td>
+                  <td>{{ assegnazione.nickname }}</td>
                   <td>{{ assegnazione.descrizionetratta }}</td>
+                  <td>{{ assegnazione.modelloveicolo }}</td>
                   <td>{{ assegnazione.tutor }}</td>
-                  <td>{{ assegnazione.email }}</td>
-                  <td>{{ assegnazione.reportsendemail }}</td>
-                
+                  <td>{{ assegnazione.telefono }}</td>
+                  <td>{{ assegnazione.reportsendwa }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-      <!--scadenza assicurazione  -->
+        <!--scadenza assicurazione  -->
         <div class="dashboard-section">
           <h2 class="section-header">{{ $t("VeicoliScadenza") }}</h2>
-          <div v-if="error" class="alert alert-danger">{{ error }}</div>
+         <div v-if="errors.veicoliScadenza" class="alert alert-danger">{{ errors.veicoliScadenza }}</div>
           <table class="table">
             <thead>
               <tr class="table-primary">
@@ -636,7 +658,7 @@ export default {
         <!-- scadenza patenti -->
         <div class="dashboard-section">
           <h2 class="section-header">{{ $t("AutistiScadenza") }}</h2>
-          <div v-if="error" class="alert alert-danger">{{ error }}</div>
+          <div v-if="errors.autistiScadenza" class="alert alert-danger">{{ errors.autistiScadenza }}</div>
           <div class="table-responsive">
             <table class="table table-striped table-smaller">
               <thead>

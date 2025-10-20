@@ -23,8 +23,8 @@ const getTodayDate = () => {
 };
 
 const newAutista = ref({
-  nome: "",
-  cognome: "",
+  nomecognome: "",
+  nickname: "",
   codfiscale: "",
   scadenzapatente: "",
   email: "",
@@ -32,8 +32,8 @@ const newAutista = ref({
   numpatente: "",
 });
 const autistaModifica = ref({
-  nome: "",
-  cognome: "",
+  nomecognome: "",
+  nickname: "",
   codfiscale: "",
   scadenzapatente: "",
   email: "",
@@ -142,8 +142,8 @@ function createMassiveRequest() {
   let request = [];
   if (isAddingRow.value) {
     const requestnewAutista = JSON.parse(JSON.stringify(newAutista.value));
-    requestnewAutista.nome = requestnewAutista.nome;
-    requestnewAutista.cognome = requestnewAutista.cognome;
+    requestnewAutista.nomecognome = requestnewAutista.nomecognome;
+    requestnewAutista.nickname = requestnewAutista.nickname;
     requestnewAutista.codfiscale = requestnewAutista.codfiscale;
     requestnewAutista.scadenzapatente = moment(requestnewAutista.scadenzapatente).format();
     requestnewAutista.email = requestnewAutista.email;
@@ -163,8 +163,8 @@ const nuovoDatoAutista = null;
 const resetnewAutista = () => {
   newAutisti.value = [];
   newAutista.value = {
-  nome: "",
-  cognome: "",
+  nomecognome: "",
+  nickname: "",
   codfiscale: "",
   scadenzapatente: "",
   email: "",
@@ -265,9 +265,9 @@ const closeModal = () => {
                 <td class="text-center" colspan="7">{{ t("noCoursesAvailable") }}</td>
               </tr>-->
               <tr v-for="item in autisti" :key="item.id">
-                <td>{{ item.nome }}</td>
-                <td>{{ item.cognome }}</td>
-                <td>{{ item.codfiscale }}</td>
+                <td>{{ item.nomecognome }}</td>
+                <td>{{ item.nickname }}</td>
+               
                 <td>{{ formatDate(item.scadenzapatente) }}</td>
                  <td>{{ item.numpatente }}</td>
           <td>{{ item.email }}</td>
@@ -287,8 +287,8 @@ const closeModal = () => {
                 </td>
               </tr>
               <tr v-for="(item, index) in newAutisti" :key="'new' + item.id">
-          <td>{{ item.nome }}</td>
-                <td>{{ item.cognome }}</td>
+          <td>{{ item.nomecognome }}</td>
+                <td>{{ item.nickname }}</td>
                 <td>{{ item.codfiscale }}</td>
                 <td>{{ formatDate(item.scadenzapatente) }}</td>
                  <td>{{ item.numpatente }}</td>
@@ -310,14 +310,14 @@ const closeModal = () => {
               <tr v-if="isAddingRow">
                 <td>
              <input
-                    v-model="newAutista.nome"
+                    v-model="newAutista.nomecognome"
                     class="form-control"
                     placeholder=""
                   />
                 </td>
                 <td>
                   <input
-                    v-model="newAutista.cognome"
+                    v-model="newAutista.nickname"
                     class="form-control"
                     placeholder=""
                   />
@@ -387,13 +387,13 @@ const closeModal = () => {
     <div class="modal-content">
       <h2>{{ $t("modificaCorsa") }}</h2>
 
-     <label for="nome">{{ $t("driverName") }}</label>
-      <input type="text" v-model="autistaModifica.nome" placeholder="" />
+     <label for="nomecognome">{{ $t("driverName") }}</label>
+      <input type="text" v-model="autistaModifica.nomecognome" placeholder="" />
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>
-  <label for="cognome">{{ $t("driverLastName") }}</label>
-      <input type="text" v-model="autistaModifica.cognome" placeholder="" />
+  <label for="nickname">{{ $t("driverLastName") }}</label>
+      <input type="text" v-model="autistaModifica.nickname" placeholder="" />
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>

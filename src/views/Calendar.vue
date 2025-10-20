@@ -125,7 +125,7 @@ function getEventDetails(event) {
   return {
     title: event.title,
     start: moment(event.start).format('YYYY-MM-DD HH:mm'),
-    description: event.extendedProps.description || 'Nessuna descrizione disponibile',
+    description: event.extendedProps.descrizione || 'Nessuna descrizione disponibile',
   };
 }
 

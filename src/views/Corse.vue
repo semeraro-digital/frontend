@@ -3,9 +3,12 @@
 import moment from "moment";
 import "moment/locale/it";
 import axios from "axios";
-import { onMounted, ref } from "vue";
+import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import _ from "lodash";
+import * as XLSX from "xlsx";
+
+const isSaving = ref(false);
 
 const { t } = useI18n();
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -15,12 +18,6 @@ const error = ref(null);
 const isAddingRow = ref(false);
 const isLoading = ref(false);
 const datafiltro = ref(moment());
-
-// Funzione per ottenere la data odierna in formato YYYY-MM-DD
-const getTodayDate = () => {
-  const today = new Date();
-  return today.toISOString().split("T")[0]; // Restituisce la data nel formato corretto
-};
 
 const newCorsa = ref({
   datapartenza: datafiltro,
@@ -40,50 +37,282 @@ const corsaModifica = ref({
 });
 const newCorse = ref([]);
 
-// Variabili per la modale di modifica corsa
+// Modale
 const isModalOpen = ref(false);
-//const corsaModifica = ref({});
 const errorMessage = ref("");
 const successMessage = ref("");
 
-// Funzione per formattare la data
-function formatDate(dateString) {
-  return moment(dateString).format("DD/MM/YYYY");
+// Veicoli
+const veicoli = ref([]);
+const searchVeicoli = ref({});
+
+// Tratte
+const tratte = ref([]);
+const tratteFiltrate = ref({});
+const searchTratte = ref({});
+
+// Autisti
+const autisti = ref([]);
+const searchAutisti = ref({});
+
+// --- Upload Excel: refs + stato ---
+const excelInput = ref(null);
+const isDragging = ref(false);
+const lastExcelName = ref("");
+
+// Apri il file picker
+function openExcelPicker() {
+  excelInput.value?.click();
 }
 
-// Funzione per gestire il cambio della data
+// Gestione drag & drop
+const onDragOver = (e) => {
+  e.preventDefault();
+  isDragging.value = true;
+};
+const onDragLeave = (e) => {
+  e.preventDefault();
+  isDragging.value = false;
+};
+const onDrop = async (e) => {
+  e.preventDefault();
+  isDragging.value = false;
+  const files = e.dataTransfer?.files;
+  await handleExcelFiles(files);
+};
 
-// Funzione per formattare l'ora
+// Parsing Excel
+const asText = (v) => (v == null ? "" : String(v).trim());
+async function handleExcelFiles(fileList) {
+  const file = fileList?.[0];
+  if (!file) return;
+  lastExcelName.value = file.name;
+
+  try {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    const jsonData = XLSX.utils
+      .sheet_to_json(worksheet, { defval: "" })
+      .filter((row) => Object.values(row).some((val) => val !== ""));
+
+    newCorse.value = []; // azzera prima
+
+    newCorse.value = jsonData.map((row) => {
+      let rawDate = row["datapartenza"];
+      let rawTime = row["orapartenza"];
+      let parsedDate, parsedTime;
+
+      // Data
+      if (typeof rawDate === "number") {
+        const excelDate = XLSX.SSF.parse_date_code(rawDate);
+        parsedDate = moment(`${excelDate.y}-${excelDate.m}-${excelDate.d}`);
+      } else {
+        parsedDate = rawDate ? moment(rawDate) : datafiltro.value;
+      }
+
+      // Ora
+      if (typeof rawTime === "number") {
+        const totalMinutes = Math.round(rawTime * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        parsedTime = `${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}`;
+      } else {
+        parsedTime = rawTime || "";
+      }
+
+      return {
+        datapartenza: parsedDate,
+        orapartenza: parsedTime,
+        tratta: (() => {
+          const partenzaExcel = asText(row["partenza"]);
+          const arrivoExcel = asText(row["arrivo"]);
+          if (!partenzaExcel || !arrivoExcel) return {};
+          const trovata = tratte.value.find(
+            (t) =>
+              t.indirizzopartenza?.toLowerCase() === partenzaExcel.toLowerCase() &&
+              t.indirizzoarrivo?.toLowerCase() === arrivoExcel.toLowerCase()
+          );
+
+          return (
+            trovata || {
+              indirizzopartenza: partenzaExcel,
+              indirizzoarrivo: arrivoExcel,
+              ora: parsedTime,
+              tutor: row["tutor"] || "",
+              datapartenza: parsedDate,
+            }
+          );
+        })(),
+        autista: (() => {
+          const nomeExcel = asText(row["autista"]);
+          if (!nomeExcel) return {};
+          const trovato = autisti.value.find(
+            (a) => a.fullName?.toLowerCase() === nomeExcel.toLowerCase()
+          );
+          return trovato || { fullName: nomeExcel };
+        })(),
+        mezzo: (() => {
+          const modelloExcel = asText(row["mezzo"]);
+          //  if (!modelloExcel) return {};
+          const trovato = veicoli.value.find(
+            (v) => v.modello?.toLowerCase() === modelloExcel.toLowerCase()
+          );
+          return trovato || { modello: modelloExcel };
+        })(),
+        tutor: row["tutor"] || "",
+      };
+    });
+  } catch (e) {
+    error.value = e?.message || String(e);
+  }
+}
+
+// Upload da input
+const handleFileUpload = async (event) => {
+  const input = event.target;
+  const files = input?.files;
+  await handleExcelFiles(files);
+  // reset per permettere di ricaricare lo stesso file
+  input.value = "";
+};
+
+// Formattazione date/ore
+function formatDate(dateString) {
+  return moment(dateString).format("dddd DD/MM/YYYY");
+}
 function formatTime(dateString) {
   return moment(dateString).format("HH:mm");
 }
 
-// Funzione per caricare le corse all'avvio
+// Caricamento iniziale dati
 onMounted(async () => {
-  await loadCorse(); // Aspetta che loadCorse() finisca prima di proseguire
+  await loadCorse();
   await loadTratte();
-  loadVeicoli(); // Puoi chiamare questa funzione in parallelo
+  loadVeicoli();
   loadAutisti();
-  loadInfoCadenza(); // Ora chiamato dopo loadCorse()
+  loadInfoCadenza();
+  window.addEventListener("keydown", onKey);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onKey);
 });
 
 const aggiornaDataFiltro = (nuovaData) => {
   datafiltro.value = moment(nuovaData).startOf("day");
+  console.log(datafiltro.value);
   aggiornaPagina();
 };
-
-const aggiornaPagina = async (id) => {
+const aggiornaPagina = async () => {
   resetNewCorsa();
   await loadCorse();
   loadInfoCadenza();
 };
 
-// Carica le corse dal server
+// ===== Toggle + Range =====
+const activeDay = ref("hoy"); // 'ayer' | 'hoy' | 'mañana'
+const isRangeMode = ref(false);
+const dateRange = ref({
+  start: moment().startOf("day"),
+  end: moment().endOf("day"),
+});
+
+const formattedDate = computed(() => {
+  try {
+    if (isRangeMode.value && dateRange.value?.start && dateRange.value?.end) {
+      const s = dateRange.value.start.format("ddd DD MMM");
+      const e = dateRange.value.end.format("ddd DD MMM");
+      return s === e ? s : `${s} → ${e}`;
+    }
+    return datafiltro.value ? datafiltro.value.format("dddd DD MMMM YYYY") : "";
+  } catch {
+    return "";
+  }
+});
+
+const setDay = (which) => {
+  activeDay.value = which;
+  if (which === "ayer") aggiornaDataFiltro(moment().subtract(1, "day"));
+  if (which === "hoy") aggiornaDataFiltro(moment());
+  if (which === "mañana") aggiornaDataFiltro(moment().add(1, "day"));
+};
+
+const onRangeChange = (val) => {
+  // supporta sia array [start, end] che oggetto { start, end }
+  let start, end;
+  if (Array.isArray(val)) {
+    [start, end] = val;
+  } else if (val && (val.start || val.end)) {
+    ({ start, end } = val);
+  }
+  if (!start) return;
+
+  const s = moment(start);
+  const e = end ? moment(end) : moment(start);
+
+  dateRange.value = { start: s, end: e };
+  aggiornaPagina();
+};
+const enableRange = (v) => {
+  isRangeMode.value = v;
+  if (!v) {
+    // uscita dal range: riallinea a “hoy”
+    setDay("hoy");
+  }
+};
+
+// Navigazione giorno singolo
+const goToday = () => {
+  aggiornaDataFiltro(new Date());
+};
+const goPrevDay = () => {
+  const d = datafiltro.value
+    ? datafiltro.value.clone().subtract(1, "day")
+    : moment().subtract(1, "day");
+  aggiornaDataFiltro(d);
+};
+const goNextDay = () => {
+  const d = datafiltro.value
+    ? datafiltro.value.clone().add(1, "day")
+    : moment().add(1, "day");
+  aggiornaDataFiltro(d);
+};
+
+// scorciatoie tastiera ← → e T
+const onKey = (e) => {
+  if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+  if (!isRangeMode.value && e.key === "ArrowLeft") {
+    e.preventDefault();
+    goPrevDay();
+  }
+  if (!isRangeMode.value && e.key === "ArrowRight") {
+    e.preventDefault();
+    goNextDay();
+  }
+  if (e.key?.toLowerCase() === "t") {
+    e.preventDefault();
+    goToday();
+  }
+};
+
+// API load
 const loadCorse = async () => {
   try {
     isLoading.value = true;
-    const startDate = new Date(datafiltro.value.toDate().setHours(0, 0, 0, 0));
-    const endDate = new Date(datafiltro.value.toDate().setHours(23, 59, 59, 999));
+
+    let startDate, endDate;
+    if (isRangeMode.value && dateRange.value?.start && dateRange.value?.end) {
+      startDate = dateRange.value.start.clone().startOf("day").toDate();
+      endDate = dateRange.value.end.clone().endOf("day").toDate();
+    } else {
+      startDate = new Date(datafiltro.value.toDate().setHours(0, 0, 0, 0));
+      endDate = new Date(datafiltro.value.toDate().setHours(23, 59, 59, 999));
+    }
+
     const payload = {
       datapartenza: startDate.toISOString(),
       dataarrivo: endDate.toISOString(),
@@ -99,6 +328,7 @@ const loadCorse = async () => {
     isLoading.value = false;
   }
 };
+
 const loadVeicoli = async () => {
   try {
     isLoading.value = true;
@@ -115,6 +345,12 @@ const loadTratte = async () => {
     isLoading.value = true;
     const response = await axios.get(`${API_BASE_URL}/tratte`);
     tratte.value = response.data;
+    tratte.value.forEach((a) => {
+      a.descrizionetratta = String(a.descrizione || "")
+        .replace(/\s*->\s*/g, " ") // togli "->" e gli spazi intorno
+        .replace(/\s{2,}/g, " ") // compatta spazi doppi
+        .trim();
+    });
   } catch (err) {
     error.value = err.response ? err.response.data.message : err.message;
   } finally {
@@ -126,7 +362,7 @@ const loadAutisti = async () => {
     isLoading.value = true;
     const response = await axios.get(`${API_BASE_URL}/autisti`);
     autisti.value = response.data;
-    autisti.value.forEach((elem) => (elem.fullName = elem.nome + " " + elem.cognome));
+    autisti.value.forEach((a) => (a.fullName = a.nickname));
   } catch (err) {
     error.value = err.response ? err.response.data.message : err.message;
   } finally {
@@ -134,27 +370,11 @@ const loadAutisti = async () => {
   }
 };
 
-// Veicoli
-const searchVeicoli = ref({});
-const veicoli = ref([]);
-
-// Tratte
-const searchTratte = ref({});
-const tratte = ref([]);
-const tratteFiltrate = ref({});
-
-// Autisti
-const searchAutisti = ref({});
-const autisti = ref([]);
-
-// Funzione per eliminare una corsa
+// Funzioni gestione corse
 const eliminaCorsa = async (id) => {
   if (confirm(t("confirmDelete"))) {
     try {
       await axios.delete(`${API_BASE_URL}/corse/corsaAssegnazione/${id}`);
-      //corse.value = corse.value.filter((corsa) => corsa.id !== id);
-
-      // Reload assignments
       await aggiornaPagina();
     } catch (err) {
       error.value = err.response ? err.response.data.message : err.message;
@@ -162,68 +382,82 @@ const eliminaCorsa = async (id) => {
   }
 };
 
-// Mostra la riga di inserimento
 const openAddRowModal = () => {
   isAddingRow.value = true;
 };
 
-// Nascondi la riga di inserimento
 const cancelAddRow = () => {
   isAddingRow.value = false;
-  resetNewCorsa();
+  //resetNewCorsa();
 };
 
-// Aggiungi una nuova corsa
 const aggiungiCorsa = async () => {
+  if (isSaving.value) return; // evita doppi invii
+  isSaving.value = true;
   try {
     const request = createMassiveRequest();
-
-    const response = await axios.post(
-      `${API_BASE_URL}/assegnazioni/aggiungiAll`,
-      request
-    );
-
-    // request.id = response.data;
-    // corse.value.push(request); // Aggiungi la nuova corsa alla tabella
-    isAddingRow.value = false; // Nascondi la riga di inserimento
-    resetNewCorsa(); // Resetta i campi del form
-    // Reload assignments
+    if (!request.length) {
+      // Alert invece dell'errore in pagina
+      // window.alert("Nessuna riga valida: seleziona almeno l'autista.");
+      // oppure in spagnolo:
+      window.alert("Ninguna fila válida: selecciona al menos al conductor.");
+      return;
+    }
+    await axios.post(`${API_BASE_URL}/assegnazioni/aggiungiAll`, request);
+    isAddingRow.value = false;
+    resetNewCorsa();
     await aggiornaPagina();
   } catch (err) {
-    console.log(err);
     error.value = err.response ? err.response.data.message : err.message;
+  } finally {
+    isSaving.value = false; // 🔑 sblocca sempre il bottone
   }
 };
 
 function createMassiveRequest() {
   let request = [];
+
   if (isAddingRow.value) {
-    const requestNewCorsa = JSON.parse(JSON.stringify(newCorsa.value));
-    requestNewCorsa.datapartenza = moment(requestNewCorsa.datapartenza)
-      .hours(requestNewCorsa.orapartenza.hours)
-      .minutes(requestNewCorsa.orapartenza.minutes)
-      .format();
-    requestNewCorsa.dataarrivo = requestNewCorsa.datapartenza;
-    requestNewCorsa.idAutista = requestNewCorsa.autista.id;
-    requestNewCorsa.idMezzo = requestNewCorsa.mezzo.id;
-    requestNewCorsa.idTratta = requestNewCorsa.tratta.id;
-    delete requestNewCorsa.mezzo;
-    delete requestNewCorsa.autista;
-    delete requestNewCorsa.tratta;
-    delete requestNewCorsa.orapartenza;
-    request = [requestNewCorsa];
+    const r = JSON.parse(JSON.stringify(newCorsa.value));
+    // serve idAutista valorizzato
+    const idAutista = r.autista?.id;
+    console.log("r.tratta.id" + r.tratta.id);
+    if (idAutista) {
+      if (r.orapartenza) {
+        r.datapartenza = moment(r.datapartenza)
+          .hours(r.orapartenza.hours || 0)
+          .minutes(r.orapartenza.minutes || 0)
+          .format();
+      }
+      r.dataarrivo = r.datapartenza;
+      r.idAutista = r.autista.id;
+      r.idMezzo = r.mezzo.id;
+      r.idTratta = r.tratta.id;
+      delete r.mezzo;
+      delete r.autista;
+      delete r.tratta;
+      delete r.orapartenza;
+      request.push(r);
+    }
   }
   if (newCorse.value.length) {
     newCorse.value.forEach((nc) => {
-      const ora = nc.tratta.ora.split(":");
-      request.push({
-        dataarrivo: moment(nc.tratta.datapartenza).hour(ora[0]).minute(ora[1]).format(),
-        datapartenza: moment(nc.tratta.datapartenza).hour(ora[0]).minute(ora[1]).format(),
-        idAutista: nc.autista.id,
-        idMezzo: nc.mezzo.id,
-        idTratta: nc.tratta.id,
-        tutor: nc.tratta.tutor,
-      });
+      const idAutista = nc.autista?.id;
+      if (idAutista) {
+        const ora = nc.tratta.ora ? nc.tratta.ora.split(":") : ["0", "0"];
+        console.log("r.tratta.id" + nc.tratta.id);
+        request.push({
+          datapartenza: moment(nc.tratta.datapartenza)
+            .hour(ora[0])
+            .minute(ora[1])
+            .format(),
+          dataarrivo: moment(nc.tratta.datapartenza).hour(ora[0]).minute(ora[1]).format(),
+          idAutista: nc.autista.id,
+          idMezzo: nc.mezzo.id,
+          idTratta: nc.tratta.id,
+          tutor: nc.tratta.tutor,
+        });
+      }
     });
   }
 
@@ -231,60 +465,47 @@ function createMassiveRequest() {
 }
 
 function filtraTratte() {
-  const giorno = moment(newCorsa.value.datapartenza)
-    .locale("en")
-    .format("ddd")
-    .toUpperCase();
+  const selected = datafiltro.value;
+  const giorno = selected.clone().locale("en").format("ddd").toUpperCase();
+
   tratteFiltrate.value = _.cloneDeep(tratte.value);
-
   _.remove(tratteFiltrate.value, (tratta) => {
-    console.log(tratta.ora + " " + tratta.cadenza + " " + tratta.descrizione);
-    let esiste = false;
-
     const cadenzaMatch = tratta.cadenza.indexOf(giorno) >= 0;
-    if (!tratta.ora) {
-      return true;
-    }
-    const existing = _.some(corse.value, (corsa) => {
-      if (!esiste) {
-        esiste =
-          tratta.id === corsa.idtratta &&
-          moment(corsa.datapartenza).isSame(datafiltro.value, "day") &&
-          moment(corsa.datapartenza).format("HH:mm") === tratta.ora;
-      }
+    const esiste = _.some(corse.value, (c) => {
+      return (
+        tratta.id === c.idtratta &&
+        moment(c.datapartenza).isSame(datafiltro.value, "day") &&
+        moment(c.datapartenza).format("HH:mm") === tratta.ora
+      );
     });
-    // console.log("esiste "+esiste+" cadenzaMatch "+cadenzaMatch)
+
     return !cadenzaMatch || esiste;
   });
 }
-const nuovoDatoCorse = null;
 
 const loadInfoCadenza = () => {
   filtraTratte();
-  // Ciclare su ciascuna tratta filtrata e aggiungere una lista di nuovi oggetti corse
-  const corseAggiunte = tratteFiltrate.value.map((tratta) => {
-    tratta.datapartenza = datafiltro;
-    return {
-      tutor: tratta.tutor, // Usa la descrizione della tratta
-      tratta: tratta, // Aggiungi il riferimento alla tratta
-      autista: {},
-      mezzo: {},
-    };
-  });
+  // reset bozze
+  newCorse.value = [];
+  const selected = datafiltro.value;
+
+  const corseAggiunte = tratteFiltrate.value.map((tr) => ({
+    tutor: tr.tutor,
+    tratta: { ...tr, datapartenza: selected.clone() }, // imposta la data selezionata
+    autista: {},
+    mezzo: {},
+  }));
   addTratteANewCorse(corseAggiunte);
 };
 
 function addTratteANewCorse(corseDaaggiungere) {
-  corseDaaggiungere.forEach((cor) => {
-    newCorse.value.push(cor);
-  });
+  corseDaaggiungere.forEach((c) => newCorse.value.push(c));
 }
 
-// Reset dei campi di newCorsa
 const resetNewCorsa = () => {
   newCorse.value = [];
   newCorsa.value = {
-    datapartenza: datafiltro,
+    datapartenza: datafiltro.value.clone(),
     orapartenza: "",
     tratta: {},
     autista: {},
@@ -296,40 +517,37 @@ const resetNewCorsa = () => {
   searchAutisti.value = "";
 };
 
-//modale
-// Funzione per aprire la modale e caricare i dettagli della corsa
+// Modale
 const openEditModal = (corsa) => {
-  corsaModifica.value = { ...corsa }; // Cloniamo l'oggetto della corsa selezionata
-
-  console.log(corsaModifica.value);
-
-  isModalOpen.value = true; // Apriamo la modale
+  corsaModifica.value = { ...corsa };
+  isModalOpen.value = true;
   errorMessage.value = "";
   successMessage.value = "";
 };
 
-// Funzione per salvare le modifiche della corsa
 const saveChanges = async () => {
+  if (isSaving.value) return; // evita doppi invii
+  isSaving.value = true;
   try {
     const response = await axios.post(
       `${API_BASE_URL}/assegnazioni/modifica/`,
       corsaModifica.value
     );
     if (response.status === 200) {
-      const index = corse.value.findIndex((c) => c.id === corsaModifica.value.id);
-      if (index !== -1) {
-        corse.value[index] = { ...corsaModifica.value }; // Aggiorniamo la corsa nella lista
-      }
+      const index = corse.value.findIndex(
+        (c) =>
+          (c.idcorsa || c.id) === (corsaModifica.value.idcorsa || corsaModifica.value.id)
+      );
+      if (index !== -1) corse.value[index] = { ...corsaModifica.value };
       successMessage.value = "Corsa aggiornata con successo!";
     }
     closeModal();
-  } catch (error) {
-    console.error("Errore durante l'aggiornamento della corsa:", error);
-    errorMessage.value = "Si è verificato un errore durante l'aggiornamento della corsa.";
+  } catch (err) {
+    errorMessage.value = "Errore durante l'aggiornamento della corsa.";
+  } finally {
+    isSaving.value = false; // 🔑 sblocca sempre il bottone
   }
 };
-
-// Funzione per chiudere la modale senza salvare
 const closeModal = () => {
   isModalOpen.value = false;
   corsaModifica.value = {};
@@ -338,20 +556,134 @@ const closeModal = () => {
 </script>
 
 <template>
-  <div class="row mb-3">
-    <div class="col-lg-5">
-      <label for="dataFiltro">{{ $t("filterDate") }}</label>
-      <VueDatePicker
-        id="dataFiltro"
-        v-model="datafiltro"
-        :format="'dd/MM/yyyy'"
-        auto-apply
-        text-input
-        locale="it"
-        @update:model-value="aggiornaDataFiltro"
-      ></VueDatePicker>
+  <!-- ====== NUOVO HEADER APP-BAR ====== -->
+  <div class="appbar">
+    <div class="day-controls">
+      <!-- Toggle 3 stati -->
+      <div class="toggle3" v-if="!isRangeMode">
+        <button
+          :class="['tg', { active: activeDay === 'ayer' }]"
+          @click="setDay('ayer')"
+          :disabled="isLoading"
+        >
+          ayer
+        </button>
+        <button
+          :class="['tg', { active: activeDay === 'hoy' }]"
+          @click="setDay('hoy')"
+          :disabled="isLoading"
+        >
+          hoy
+        </button>
+        <button
+          :class="['tg', { active: activeDay === 'mañana' }]"
+          @click="setDay('mañana')"
+          :disabled="isLoading"
+        >
+          mañana
+        </button>
+      </div>
+      <!-- Singolo giorno -->
+      <template v-if="!isRangeMode">
+        <button
+          class="btn-icon"
+          @click="goPrevDay"
+          :disabled="isLoading"
+          title="Giorno precedente (←)"
+        >
+          <i class="fas fa-chevron-left" />
+        </button>
+
+        <VueDatePicker
+          v-model="datafiltro"
+          :format="'dd/MM/yyyy'"
+          auto-apply
+          text-input
+          locale="it"
+          @update:model-value="aggiornaDataFiltro"
+          class="date-input"
+        />
+
+        <button
+          class="btn-icon"
+          @click="goNextDay"
+          :disabled="isLoading"
+          title="Giorno successivo (→)"
+        >
+          <i class="fas fa-chevron-right" />
+        </button>
+      </template>
+
+      <!-- Range date -->
+      <template v-else>
+        <VueDatePicker
+          v-model="dateRange"
+          range
+          :format="'dd/MM/yyyy'"
+          auto-apply
+          text-input
+          locale="it"
+          @update:model-value="onRangeChange"
+          class="date-input range"
+        />
+      </template>
+
+      <!-- switch modalità 
+      <label class="mode-switch">
+        <input
+          type="checkbox"
+          :checked="isRangeMode"
+          @change="enableRange($event.target.checked)"
+        />
+        <span>intervalo</span>
+      </label>
+-->
+      <!-- chip data/range -->
+      <span class="date-chip">
+        <i class="far fa-calendar-alt me-1" />{{ formattedDate }}
+      </span>
+    </div>
+
+    <div class="upload-area">
+      <!-- input file nascosto -->
+      <input
+        ref="excelInput"
+        type="file"
+        accept=".xlsx,.xls"
+        class="d-none"
+        @change="handleFileUpload"
+      />
+      <!-- bottone upload compatto -->
+      <button
+        type="button"
+        class="btn-primary-solid"
+        @click="openExcelPicker"
+        :disabled="isLoading"
+      >
+        <i class="fas fa-upload me-2"></i>{{ $t("sfoglia") || "Carica Excel" }}
+      </button>
+
+      <span v-if="lastExcelName" class="file-name" :title="lastExcelName">
+        <i class="far fa-file-excel me-1" />{{ lastExcelName }}
+      </span>
     </div>
   </div>
+
+  <!-- Dropzone inline/leggera visibile solo mentre trascini -->
+  <transition name="fade">
+    <div
+      v-show="isDragging"
+      class="dropzone-inline"
+      @drop="onDrop"
+      @dragover="onDragOver"
+      @dragleave="onDragLeave"
+    >
+      <div class="dz-content">
+        <i class="fas fa-cloud-upload-alt" />
+        <span>{{ $t("trascinaQui") || "Rilascia qui il file per importare" }}</span>
+      </div>
+    </div>
+  </transition>
 
   <div class="container-fluid">
     <!-- Messaggio di errore globale -->
@@ -377,7 +709,7 @@ const closeModal = () => {
         <div v-if="!error && !isLoading">
           <table
             class="table table-striped table-sm custom-table"
-            style="margin-top: 20px"
+            style="margin-top: 10px"
           >
             <thead class="thead-light">
               <tr>
@@ -388,7 +720,6 @@ const closeModal = () => {
                 <th scope="col">{{ $t("driver") }}</th>
                 <th scope="col">{{ $t("vehicle") }}</th>
                 <th scope="col" class="text-right">
-                  <!-- Pulsante "+" per aggiungere una nuova riga -->
                   <button @click="openAddRowModal" class="btn btn-sm btn-primary">
                     <i class="fa fa-plus"></i>
                   </button>
@@ -396,16 +727,88 @@ const closeModal = () => {
                 <th scope="col" class="text-right"></th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-if="corse.length === 0">
+            <tbody class="small">
+              <!-- 🔝 Riga per l'inserimento della nuova corsa: PRIMA di tutto -->
+              <tr v-if="isAddingRow" key="add-row-top">
+                <td>
+                  <VueDatePicker
+                    id="data"
+                    :enable-time-picker="false"
+                    auto-apply
+                    text-input
+                    format="dd/MM/yyyy"
+                    v-model="newCorsa.datapartenza"
+                    locale="it"
+                  />
+                </td>
+                <td>
+                  <VueDatePicker
+                    id="ora"
+                    time-picker
+                    text-input
+                    :hours-increment="1"
+                    :minutes-increment="5"
+                    :minutes-grid-increment="5"
+                    format="HH:mm"
+                    v-model="newCorsa.orapartenza"
+                    locale="it"
+                    :select-text="$t('assign')"
+                    :cancel-text="$t('cancel')"
+                  />
+                </td>
+                <td>
+                  <TypeAhead
+                    id="tratte"
+                    :items="tratte"
+                    v-model="newCorsa.tratta"
+                    :itemProjection="(item) => item.descrizionetratta"
+                    :allow-new="true"
+                  />
+                </td>
+                <td>
+                  <input
+                    v-model="newCorsa.tutor"
+                    class="form-control"
+                    placeholder="Tutor"
+                  />
+                </td>
+                <td>
+                  <TypeAhead
+                    id="autisti"
+                    :items="autisti"
+                    v-model="newCorsa.autista"
+                    :itemProjection="(item) => item.fullName"
+                    :allow-new="true"
+                  />
+                </td>
+                <td>
+                  <TypeAhead
+                    id="veicoli"
+                    :items="veicoli"
+                    v-model="newCorsa.mezzo"
+                    :itemProjection="(item) => item.modello"
+                    :allow-new="true"
+                  />
+                </td>
+                <td class="text-right" style="width: 100px">
+                  <button @click="cancelAddRow" class="btn btn-sm btn-secondary mr-1">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Nessun dato -->
+              <tr v-if="corse.length === 0 && newCorse.length === 0 && !isAddingRow">
                 <td class="text-center" colspan="7">{{ t("noCoursesAvailable") }}</td>
               </tr>
-              <tr v-for="item in corse" :key="item.id">
+
+              <!-- Corse esistenti -->
+              <tr v-for="item in corse" :key="item.idcorsa || item.id">
                 <td>{{ formatDate(item.datapartenza) }}</td>
                 <td>{{ formatTime(item.datapartenza) }}</td>
                 <td>{{ item.descrizionetratta }}</td>
                 <td>{{ item.tutor }}</td>
-                <td>{{ item.nomeautista }} {{ item.cognomeautista }}</td>
+                <td>{{ item.nickname }}</td>
                 <td>{{ item.modelloveicolo }}</td>
                 <td class="text-right">
                   <button class="btn btn-primary" @click="openEditModal(item)">
@@ -421,7 +824,14 @@ const closeModal = () => {
                   </button>
                 </td>
               </tr>
-              <tr v-for="(item, index) in newCorse" :key="'new' + item.id">
+
+              <!-- Bozze da Excel -->
+              <tr
+                v-for="(item, index) in newCorse"
+                :key="`new-${index}-${item.tratta?.descrizione || ''}-${
+                  item.tratta?.ora || ''
+                }`"
+              >
                 <td>{{ formatDate(item.tratta.datapartenza) }}</td>
                 <td>{{ item.tratta.ora }}</td>
                 <td>{{ item.tratta.descrizione }}</td>
@@ -453,77 +863,6 @@ const closeModal = () => {
                   </button>
                 </td>
               </tr>
-              <!-- Riga per l'inserimento della nuova corsa -->
-              <tr v-if="isAddingRow">
-                <td>
-                  <VueDatePicker
-                    id="data"
-                    :enable-time-picker="false"
-                    auto-apply
-                    text-input
-                    format="dd/MM/yyyy"
-                    v-model="newCorsa.datapartenza"
-                    locale="it"
-                  ></VueDatePicker>
-                </td>
-                <td>
-                  <VueDatePicker
-                    id="ora"
-                    time-picker
-                    text-input
-                    :hours-increment="1"
-                    :minutes-increment="5"
-                    :minutes-grid-increment="5"
-                    format="HH:mm"
-                    v-model="newCorsa.orapartenza"
-                    locale="it"
-                    :select-text="$t('assign')"
-                    :cancel-text="$t('cancel')"
-                  ></VueDatePicker>
-                </td>
-
-                <!-- Autocompletamento Tratte -->
-                <td>
-                  <TypeAhead
-                    id="tratte"
-                    :items="tratte"
-                    v-model="newCorsa.tratta"
-                    :itemProjection="(item) => item.descrizione"
-                    :allow-new="true"
-                  />
-                </td>
-                <td>
-                  <input
-                    v-model="newCorsa.tutor"
-                    class="form-control"
-                    placeholder="Tutor"
-                  />
-                </td>
-                <td>
-                  <TypeAhead
-                    id="autisti"
-                    :items="autisti"
-                    v-model="newCorsa.autista"
-                    :itemProjection="(item) => item.fullName"
-                    :allow-new="true"
-                  />
-                </td>
-                <!-- Autocompletamento Veicoli -->
-                <td>
-                  <TypeAhead
-                    id="veicoli"
-                    :items="veicoli"
-                    v-model="newCorsa.mezzo"
-                    :itemProjection="(item) => item.modello"
-                    :allow-new="true"
-                  />
-                </td>
-                <td style="width: 100px" class="text-right">
-                  <button @click="cancelAddRow" class="btn btn-sm btn-secondary mr-1">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -531,8 +870,24 @@ const closeModal = () => {
     </div>
     <div class="row">
       <div class="col text-right">
-        <button @click="aggiungiCorsa" class="btn btn-sm btn-success">
-          {{ $t("aggiungiCorse") }}
+        <button
+          @click="aggiungiCorsa"
+          class="btn btn-sm btn-success"
+          :disabled="isSaving || isLoading"
+        >
+          <span
+            v-if="isSaving"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          <span>
+            {{
+              isSaving
+                ? $t("saving") || "Salvataggio..."
+                : $t("aggiungiCorse") || "Aggiungi corse"
+            }}
+          </span>
         </button>
       </div>
     </div>
@@ -564,7 +919,7 @@ const closeModal = () => {
       <select id="autisti" v-model="corsaModifica.idautista" @change="handleTrattaChange">
         <option value="" disabled selected>...</option>
         <option v-for="autista in autisti" :key="autista.id" :value="autista.id">
-          {{ autista.nome }} {{ autista.cognome }}
+          {{ autista.nickname }}
         </option>
       </select>
 
@@ -589,7 +944,17 @@ const closeModal = () => {
 
       <div class="d-flex justify-content-end gap-2">
         <button @click="saveChanges" class="btn btn-sm btn-primary">
-          {{ $t("save") }}
+         
+
+                <span
+            v-if="isSaving"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          <span>
+           {{ $t("save") }}
+          </span>
         </button>
         <button @click="closeModal" class="btn btn-sm btn-secondary">
           {{ $t("close") }}
@@ -626,6 +991,7 @@ const closeModal = () => {
 .autocomplete-item:hover {
   background-color: #f0f0f0;
 }
+
 /* Modale */
 .modal {
   position: fixed;
@@ -672,5 +1038,223 @@ button:hover {
   color: green;
   font-size: 14px;
   margin-top: 10px;
+}
+
+/* ====== NUOVO HEADER / APP-BAR ====== */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #ffffffcc; /* leggero blur */
+  backdrop-filter: saturate(1.2) blur(6px);
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  margin-bottom: 12px;
+}
+.day-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+}
+.btn-icon:hover {
+  background: #f8fafc;
+}
+.btn-icon:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-text {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-text:hover {
+  background: #f8fafc;
+}
+
+.date-input :deep(.dp__input) {
+  height: 36px;
+  border-radius: 10px;
+  border-color: #e5e7eb;
+}
+
+.date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px; /* 🔹 aumenta il padding orizzontale */
+  min-width: 240px; /* 🔹 garantisce una larghezza minima */
+  justify-content: center;
+  background: #f3f4f6; /* grigio chiaro */
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+.date-chip i {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.upload-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-primary-solid {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  background: #0d6efd;
+  box-shadow: 0 6px 14px rgba(13, 110, 253, 0.18);
+}
+.btn-primary-solid:hover {
+  filter: brightness(0.98);
+}
+.file-name {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #6b7280;
+}
+
+/* Dropzone leggera quando si trascina */
+.dropzone-inline {
+  border: 2px dashed #0d6efd55;
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 8px;
+  background: #f8fbff;
+}
+.dz-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+/* Transizione fade per la dropzone */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Toggle 3 stati */
+.toggle3 {
+  display: inline-flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  margin-right: 6px;
+}
+.toggle3 .tg {
+  padding: 6px 10px;
+  background: #fff;
+  border: 0;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+.toggle3 .tg + .tg {
+  border-left: 1px solid #e5e7eb;
+}
+.toggle3 .tg.active {
+  background: #0d6efd;
+  color: #fff;
+}
+
+/* switch modalità */
+.mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+.mode-switch input {
+  cursor: pointer;
+}
+
+/* range picker un filo più largo */
+.date-input.range :deep(.dp__input) {
+  min-width: 230px;
+}
+
+/* (facoltativo) Stili dropzone “vecchia” se riutilizzata altrove */
+.dropzone-vue {
+  border: 2px dashed #e5e7eb;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.dropzone-vue.dragging {
+  border-color: #0d6efd33;
+  background: #f8fbff;
+}
+.drop-start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.drop-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #e7f1ff;
+}
+.drop-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.drop-text {
+  display: flex;
+  flex-direction: column;
+}
+.drop-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+.drop-hint {
+  font-size: 12px;
+  color: #6b7280;
 }
 </style>
