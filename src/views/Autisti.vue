@@ -323,14 +323,14 @@ const closeModal = () => {
                     placeholder=""
                   />
                 </td>
-                <td>
+            <!--    <td>
                   <input
                     v-model="newAutista.codfiscale"
                     class="form-control"
                     placeholder=""
                   />
              
-                </td>
+                </td> -->
                <td>
                   <VueDatePicker
                     id="scadenzapatente"
