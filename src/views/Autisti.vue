@@ -246,11 +246,11 @@ const closeModal = () => {
               <tr>
                 <th scope="col">{{ $t("driverName") }}</th>
                 <th scope="col">{{ $t("driverLastName") }}</th>
-                <th scope="col">{{ $t("codiceFiscale") }}</th>
                 <th scope="col">{{ $t("driverLicenseExpiry") }}</th>
                 <th scope="col">{{ $t("numpatente") }}</th>
                 <th scope="col">{{ $t("driverEmail") }}</th>
                 <th scope="col">{{ $t("enterPhone") }}</th>
+           <!--     <th scope="col">{{ $t("codiceFiscale") }}</th>-->
                 <th scope="col" class="text-right">
                   <!-- Pulsante "+" per aggiungere una nuova riga -->
                   <button @click="openAddRowModal" class="btn btn-sm btn-primary">
@@ -263,11 +263,12 @@ const closeModal = () => {
             <tbody>
         <!--      <tr v-if="corse.length === 0">
                 <td class="text-center" colspan="7">{{ t("noCoursesAvailable") }}</td>
-              </tr>-->
+              </tr>
+         -->
+
               <tr v-for="item in autisti" :key="item.id">
                 <td>{{ item.nomecognome }}</td>
                 <td>{{ item.nickname }}</td>
-               
                 <td>{{ formatDate(item.scadenzapatente) }}</td>
                  <td>{{ item.numpatente }}</td>
           <td>{{ item.email }}</td>
@@ -289,12 +290,12 @@ const closeModal = () => {
               <tr v-for="(item, index) in newAutisti" :key="'new' + item.id">
           <td>{{ item.nomecognome }}</td>
                 <td>{{ item.nickname }}</td>
-                <td>{{ item.codfiscale }}</td>
                 <td>{{ formatDate(item.scadenzapatente) }}</td>
                  <td>{{ item.numpatente }}</td>
           <td>{{ item.email }}</td>
          <td>{{ item.telefono }}</td>
-                
+            <!--    <td>{{ item.codfiscale }}</td> -->
+
 
                 
                 <td class="text-right">
