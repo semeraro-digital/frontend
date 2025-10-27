@@ -81,95 +81,70 @@ const onDrop = async (e) => {
   await handleExcelFiles(files);
 };
 
-// Parsing Excel
-const asText = (v) => (v == null ? "" : String(v).trim());
+// Funzione robusta per leggere N blocchi
 async function handleExcelFiles(fileList) {
-  const file = fileList?.[0];
-  if (!file) return;
-  lastExcelName.value = file.name;
+const file = fileList?.[0];
+if (!file) return;
 
-  try {
-    const data = await file.arrayBuffer();
-    const workbook = XLSX.read(data);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
 
-    const jsonData = XLSX.utils
-      .sheet_to_json(worksheet, { defval: "" })
-      .filter((row) => Object.values(row).some((val) => val !== ""));
+try {
+const data = await file.arrayBuffer();
+const workbook = XLSX.read(data);
+const sheetName = workbook.SheetNames[0];
+const worksheet = workbook.Sheets[sheetName];
+const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-    newCorse.value = []; // azzera prima
 
-    newCorse.value = jsonData.map((row) => {
-      let rawDate = row["datapartenza"];
-      let rawTime = row["orapartenza"];
-      let parsedDate, parsedTime;
+newCorse.value = [];
 
-      // Data
-      if (typeof rawDate === "number") {
-        const excelDate = XLSX.SSF.parse_date_code(rawDate);
-        parsedDate = moment(`${excelDate.y}-${excelDate.m}-${excelDate.d}`);
-      } else {
-        parsedDate = rawDate ? moment(rawDate) : datafiltro.value;
-      }
 
-      // Ora
-      if (typeof rawTime === "number") {
-        const totalMinutes = Math.round(rawTime * 24 * 60);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        parsedTime = `${hours.toString().padStart(2, "0")}:${minutes
-          .toString()
-          .padStart(2, "0")}`;
-      } else {
-        parsedTime = rawTime || "";
-      }
+jsonData.forEach((row) => {
+// Ogni blocco ha prefisso: '', '2_', '3_', ecc.
+const blockPrefixes = Object.keys(row)
+.filter((k) => k.includes("hora"))
+.map((k) => k.replace("hora", ""));
 
-      return {
-        datapartenza: parsedDate,
-        orapartenza: parsedTime,
-        tratta: (() => {
-          const partenzaExcel = asText(row["partenza"]);
-          const arrivoExcel = asText(row["arrivo"]);
-          if (!partenzaExcel || !arrivoExcel) return {};
-          const trovata = tratte.value.find(
-            (t) =>
-              t.indirizzopartenza?.toLowerCase() === partenzaExcel.toLowerCase() &&
-              t.indirizzoarrivo?.toLowerCase() === arrivoExcel.toLowerCase()
-          );
 
-          return (
-            trovata || {
-              indirizzopartenza: partenzaExcel,
-              indirizzoarrivo: arrivoExcel,
-              ora: parsedTime,
-              tutor: row["tutor"] || "",
-              datapartenza: parsedDate,
-            }
-          );
-        })(),
-        autista: (() => {
-          const nomeExcel = asText(row["autista"]);
-          if (!nomeExcel) return {};
-          const trovato = autisti.value.find(
-            (a) => a.fullName?.toLowerCase() === nomeExcel.toLowerCase()
-          );
-          return trovato || { fullName: nomeExcel };
-        })(),
-        mezzo: (() => {
-          const modelloExcel = asText(row["mezzo"]);
-          //  if (!modelloExcel) return {};
-          const trovato = veicoli.value.find(
-            (v) => v.modello?.toLowerCase() === modelloExcel.toLowerCase()
-          );
-          return trovato || { modello: modelloExcel };
-        })(),
-        tutor: row["tutor"] || "",
-      };
-    });
-  } catch (e) {
-    error.value = e?.message || String(e);
-  }
+blockPrefixes.forEach((prefix) => {
+const hora = row[`${prefix}hora`];
+const servicio = row[`${prefix}servicio`];
+const ruta = row[`${prefix}ruta`];
+const monitora = row[`${prefix}monitora`];
+const bus = row[`${prefix}bus`];
+const conductor = row[`${prefix}conductor`];
+
+
+if (!hora || !servicio || !ruta) return; // blocco incompleto
+
+
+const parsedTime = typeof hora === "number"
+? (() => {
+const totalMinutes = Math.round(hora * 24 * 60);
+const hours = Math.floor(totalMinutes / 60);
+const minutes = totalMinutes % 60;
+return `${hours.toString().padStart(2, "0")}:${minutes
+.toString()
+.padStart(2, "0")}`;
+})()
+: String(hora).trim();
+
+
+const trattaMatch = tratte.value.find((t) => t.descrizione?.trim().toLowerCase() === ruta.trim().toLowerCase());
+const autistaMatch = autisti.value.find((a) => a.nickname?.trim().toLowerCase() === conductor.trim().toLowerCase());
+const mezzoMatch = veicoli.value.find((v) => v.modello?.trim().toLowerCase() === bus.trim().toLowerCase());
+
+
+newCorse.value.push({
+tratta: trattaMatch || { descrizione: ruta, ora: parsedTime, tutor: monitora, datapartenza: datafiltro.value },
+tutor: monitora,
+autista: autistaMatch || { nickname: conductor },
+mezzo: mezzoMatch || { modello: bus },
+});
+});
+});
+} catch (e) {
+error.value = e?.message || String(e);
+}
 }
 
 // Upload da input
