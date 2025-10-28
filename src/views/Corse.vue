@@ -82,6 +82,7 @@ const onDrop = async (e) => {
 };
 
 // Funzione robusta per leggere N blocchi
+
 async function handleExcelFiles(fileList) {
   const file = fileList?.[0];
   if (!file) return;
@@ -91,7 +92,21 @@ async function handleExcelFiles(fileList) {
     const workbook = XLSX.read(data);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+const jsonDataRaw = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+// 🔧 Normalizza chiavi: tutte minuscole, senza spazi, per compatibilità col parsing
+const jsonData = jsonDataRaw.map((row) => {
+  const newRow = {};
+  Object.entries(row).forEach(([key, value]) => {
+    const newKey = key
+      .toString()
+      .trim()
+      .replace(/\s+/g, "") // rimuove spazi
+      .toLowerCase();      // converte in minuscolo
+    newRow[newKey] = value;
+  });
+  return newRow;
+});
 
 console.log("JSON Excel:", jsonData);
 
