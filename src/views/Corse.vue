@@ -146,9 +146,16 @@ console.log("Prefix rilevati:", blockPrefixes);
             })()
           : String(hora).trim();
 
-        const trattaMatch = tratte.value.find((t) => t.descrizione?.trim().toLowerCase() === ruta?.trim().toLowerCase());
-        const autistaMatch = autisti.value.find((a) => a.nickname?.trim().toLowerCase() === conductor?.trim().toLowerCase());
-        const mezzoMatch = veicoli.value.find((v) => v.modello?.trim().toLowerCase() === bus?.trim().toLowerCase());
+        const trattaMatch = tratte.value.find((t) =>
+          String(t.descrizione || "").trim().toLowerCase() === String(ruta || "").trim().toLowerCase()
+        );
+      const autistaMatch = autisti.value.find((a) =>
+        String(a.nickname || "").trim().toLowerCase() === String(conductor || "").trim().toLowerCase()
+      );
+
+      const mezzoMatch = veicoli.value.find((v) =>
+        String(v.modello || "").trim().toLowerCase() === String(bus || "").trim().toLowerCase()
+      );
 
         const isValid = hora && servicio && ruta;
 
