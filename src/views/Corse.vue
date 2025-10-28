@@ -93,12 +93,21 @@ async function handleExcelFiles(fileList) {
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
+console.log("JSON Excel:", jsonData);
+
     newCorse.value = [];
 
     jsonData.forEach((row) => {
-      const blockPrefixes = Object.keys(row)
-        .filter((k) => k.toLowerCase().includes("hora"))
-        .map((k) => k.replace(/hora/i, ""));
+
+const blockPrefixes = Object.keys(row)
+  .filter(k => k.toLowerCase().includes("hora"))
+  .map(k => {
+    const match = k.toLowerCase().match(/^(\d+)_?hora|hora(\d+)/);
+    return match?.[1] || match?.[2] || ""; // ritorna '2', '3', ecc. oppure ''
+  });
+
+
+console.log("Prefix rilevati:", blockPrefixes);
 
       blockPrefixes.forEach((prefix) => {
         const hora = row[`${prefix}hora`];
@@ -145,6 +154,8 @@ async function handleExcelFiles(fileList) {
             bloccoIncompleto: !isValid,
           },
         });
+        console.log("Nuova corsa:", newCorse.value[newCorse.value.length - 1]);
+
       });
     });
 
