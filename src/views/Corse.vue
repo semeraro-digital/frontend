@@ -108,7 +108,6 @@ const jsonData = jsonDataRaw.map((row) => {
   return newRow;
 });
 
-console.log("JSON Excel:", jsonData);
 
     newCorse.value = [];
 
@@ -120,9 +119,6 @@ const blockPrefixes = Object.keys(row)
     const match = k.toLowerCase().match(/^(\d+)_?hora|hora(\d+)/);
     return match?.[1] || match?.[2] || ""; // ritorna '2', '3', ecc. oppure ''
   });
-
-
-console.log("Prefix rilevati:", blockPrefixes);
 
       blockPrefixes.forEach((prefix) => {
         const hora = row[`${prefix}hora`];
@@ -146,9 +142,14 @@ console.log("Prefix rilevati:", blockPrefixes);
             })()
           : String(hora).trim();
 
-        const trattaMatch = tratte.value.find((t) =>
-          String(t.descrizione || "").trim().toLowerCase() === String(ruta || "").trim().toLowerCase()
-        );
+const trattaMatch = tratte.value.find((t) =>
+  String(t.indirizzopartenza || "").trim().toLowerCase() === String(servicio || "").trim().toLowerCase() &&
+  String(t.indirizzoarrivo || "").trim().toLowerCase() === String(ruta || "").trim().toLowerCase()
+);
+
+if (!trattaMatch) {
+  console.warn("Tratta non riconosciuta:", servicio, "→", ruta);
+}
       const autistaMatch = autisti.value.find((a) =>
         String(a.nickname || "").trim().toLowerCase() === String(conductor || "").trim().toLowerCase()
       );
