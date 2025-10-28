@@ -94,16 +94,13 @@ const sheetName = workbook.SheetNames[0];
 const worksheet = workbook.Sheets[sheetName];
 const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-
 newCorse.value = [];
-
 
 jsonData.forEach((row) => {
 // Ogni blocco ha prefisso: '', '2_', '3_', ecc.
 const blockPrefixes = Object.keys(row)
 .filter((k) => k.includes("hora"))
 .map((k) => k.replace("hora", ""));
-
 
 blockPrefixes.forEach((prefix) => {
 const hora = row[`${prefix}hora`];
@@ -113,9 +110,7 @@ const monitora = row[`${prefix}monitora`];
 const bus = row[`${prefix}bus`];
 const conductor = row[`${prefix}conductor`];
 
-
 if (!hora || !servicio || !ruta) return; // blocco incompleto
-
 
 const parsedTime = typeof hora === "number"
 ? (() => {
@@ -133,13 +128,24 @@ const trattaMatch = tratte.value.find((t) => t.descrizione?.trim().toLowerCase()
 const autistaMatch = autisti.value.find((a) => a.nickname?.trim().toLowerCase() === conductor.trim().toLowerCase());
 const mezzoMatch = veicoli.value.find((v) => v.modello?.trim().toLowerCase() === bus.trim().toLowerCase());
 
+const hasTratta = !!trattaMatch;
+const hasAutista = !!autistaMatch;
+const hasMezzo = !!mezzoMatch;
+const isValid = hora && servicio && ruta;
 
 newCorse.value.push({
-tratta: trattaMatch || { descrizione: ruta, ora: parsedTime, tutor: monitora, datapartenza: datafiltro.value },
-tutor: monitora,
-autista: autistaMatch || { nickname: conductor },
-mezzo: mezzoMatch || { modello: bus },
+  tratta: trattaMatch || { descrizione: ruta, ora: parsedTime, tutor: monitora, datapartenza: datafiltro.value },
+  tutor: monitora,
+  autista: autistaMatch || { nickname: conductor },
+  mezzo: mezzoMatch || { modello: bus },
+  flags: {
+    trattaNonRiconosciuta: !hasTratta,
+    autistaNonRiconosciuto: !hasAutista,
+    mezzoNonRiconosciuto: !hasMezzo,
+    bloccoIncompleto: !isValid
+  }
 });
+
 });
 });
 } catch (e) {
@@ -528,6 +534,16 @@ const closeModal = () => {
   corsaModifica.value = {};
   aggiornaPagina();
 };
+
+function getRowTooltip(flags) {
+  const messages = [];
+  if (flags?.bloccoIncompleto) messages.push("Blocco incompleto: manca ora o tratta.");
+  if (flags?.trattaNonRiconosciuta) messages.push("Tratta non riconosciuta.");
+  if (flags?.autistaNonRiconosciuto) messages.push("Autista non riconosciuto.");
+  if (flags?.mezzoNonRiconosciuto) messages.push("Mezzo non riconosciuto.");
+  return messages.join(" ");
+}
+
 </script>
 
 <template>
@@ -803,9 +819,13 @@ const closeModal = () => {
               <!-- Bozze da Excel -->
               <tr
                 v-for="(item, index) in newCorse"
-                :key="`new-${index}-${item.tratta?.descrizione || ''}-${
-                  item.tratta?.ora || ''
-                }`"
+                :key="`new-${index}-${item.tratta?.descrizione || ''}-${item.tratta?.ora || ''}`"
+                :class="{
+                  'table-danger': item.flags?.bloccoIncompleto,
+                  'table-warning': item.flags?.trattaNonRiconosciuta,
+                  'table-info': (item.flags?.autistaNonRiconosciuto || item.flags?.mezzoNonRiconosciuto) && !item.flags?.trattaNonRiconosciuta
+                }"
+                :title="getRowTooltip(item.flags)"
               >
                 <td>{{ formatDate(item.tratta.datapartenza) }}</td>
                 <td>{{ item.tratta.ora }}</td>
@@ -838,6 +858,8 @@ const closeModal = () => {
                   </button>
                 </td>
               </tr>
+
+        <!--fine -->
             </tbody>
           </table>
         </div>
