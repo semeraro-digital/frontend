@@ -83,75 +83,78 @@ const onDrop = async (e) => {
 
 // Funzione robusta per leggere N blocchi
 async function handleExcelFiles(fileList) {
-const file = fileList?.[0];
-if (!file) return;
+  const file = fileList?.[0];
+  if (!file) return;
 
+  try {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-try {
-const data = await file.arrayBuffer();
-const workbook = XLSX.read(data);
-const sheetName = workbook.SheetNames[0];
-const worksheet = workbook.Sheets[sheetName];
-const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    newCorse.value = [];
 
-newCorse.value = [];
+    jsonData.forEach((row) => {
+      const blockPrefixes = Object.keys(row)
+        .filter((k) => k.toLowerCase().includes("hora"))
+        .map((k) => k.replace(/hora/i, ""));
 
-jsonData.forEach((row) => {
-// Ogni blocco ha prefisso: '', '2_', '3_', ecc.
-const blockPrefixes = Object.keys(row)
-.filter((k) => k.includes("hora"))
-.map((k) => k.replace("hora", ""));
+      blockPrefixes.forEach((prefix) => {
+        const hora = row[`${prefix}hora`];
+        const servicio = row[`${prefix}servicio`];
+        const ruta = row[`${prefix}ruta`];
+        const monitora = row[`${prefix}monitora`];
+        const bus = row[`${prefix}bus`];
+        const conductor = row[`${prefix}conductor`];
 
-blockPrefixes.forEach((prefix) => {
-const hora = row[`${prefix}hora`];
-const servicio = row[`${prefix}servicio`];
-const ruta = row[`${prefix}ruta`];
-const monitora = row[`${prefix}monitora`];
-const bus = row[`${prefix}bus`];
-const conductor = row[`${prefix}conductor`];
+        if (!hora && !servicio && !ruta) return; // blocco totalmente vuoto
 
-if (!hora || !servicio || !ruta) return; // blocco incompleto
+        // parse ora
+        const parsedTime = typeof hora === "number"
+          ? (() => {
+              const totalMinutes = Math.round(hora * 24 * 60);
+              const hours = Math.floor(totalMinutes / 60);
+              const minutes = totalMinutes % 60;
+              return `${hours.toString().padStart(2, "0")}:${minutes
+                .toString()
+                .padStart(2, "0")}`;
+            })()
+          : String(hora).trim();
 
-const parsedTime = typeof hora === "number"
-? (() => {
-const totalMinutes = Math.round(hora * 24 * 60);
-const hours = Math.floor(totalMinutes / 60);
-const minutes = totalMinutes % 60;
-return `${hours.toString().padStart(2, "0")}:${minutes
-.toString()
-.padStart(2, "0")}`;
-})()
-: String(hora).trim();
+        const trattaMatch = tratte.value.find((t) => t.descrizione?.trim().toLowerCase() === ruta?.trim().toLowerCase());
+        const autistaMatch = autisti.value.find((a) => a.nickname?.trim().toLowerCase() === conductor?.trim().toLowerCase());
+        const mezzoMatch = veicoli.value.find((v) => v.modello?.trim().toLowerCase() === bus?.trim().toLowerCase());
 
+        const isValid = hora && servicio && ruta;
 
-const trattaMatch = tratte.value.find((t) => t.descrizione?.trim().toLowerCase() === ruta.trim().toLowerCase());
-const autistaMatch = autisti.value.find((a) => a.nickname?.trim().toLowerCase() === conductor.trim().toLowerCase());
-const mezzoMatch = veicoli.value.find((v) => v.modello?.trim().toLowerCase() === bus.trim().toLowerCase());
+        newCorse.value.push({
+          tratta: trattaMatch || {
+            descrizione: ruta,
+            ora: parsedTime,
+            tutor: monitora,
+            datapartenza: datafiltro.value,
+          },
+          tutor: monitora,
+          autista: autistaMatch || { nickname: conductor },
+          mezzo: mezzoMatch || { modello: bus },
+          flags: {
+            trattaNonRiconosciuta: !trattaMatch,
+            autistaNonRiconosciuto: !autistaMatch,
+            mezzoNonRiconosciuto: !mezzoMatch,
+            bloccoIncompleto: !isValid,
+          },
+        });
+      });
+    });
 
-const hasTratta = !!trattaMatch;
-const hasAutista = !!autistaMatch;
-const hasMezzo = !!mezzoMatch;
-const isValid = hora && servicio && ruta;
+    lastExcelName.value = file.name;
 
-newCorse.value.push({
-  tratta: trattaMatch || { descrizione: ruta, ora: parsedTime, tutor: monitora, datapartenza: datafiltro.value },
-  tutor: monitora,
-  autista: autistaMatch || { nickname: conductor },
-  mezzo: mezzoMatch || { modello: bus },
-  flags: {
-    trattaNonRiconosciuta: !hasTratta,
-    autistaNonRiconosciuto: !hasAutista,
-    mezzoNonRiconosciuto: !hasMezzo,
-    bloccoIncompleto: !isValid
+  } catch (e) {
+    error.value = e?.message || String(e);
   }
-});
+}
 
-});
-});
-} catch (e) {
-error.value = e?.message || String(e);
-}
-}
 
 // Upload da input
 const handleFileUpload = async (event) => {
