@@ -1133,9 +1133,12 @@ function getRowTooltip(flags) {
 
 .modal-content {
   background-color: white;
-  padding: 20px;
-  border-radius: 5px;
-  width: 300px;
+  padding: 24px 32px;
+  border-radius: 16px;
+  width: 480px;
+  max-width: 90vw;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  font-size: 15px;
 }
 
 .modal-buttons {
