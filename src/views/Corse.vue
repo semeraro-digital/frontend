@@ -166,10 +166,12 @@ if (!trattaMatch) {
 
         newCorse.value.push({
           tratta: trattaMatch || {
-            descrizione: ruta,
+            descrizione: ruta+"->"+servicio,
             ora: parsedTime,
             tutor: monitora,
             datapartenza: datafiltro.value,
+            indirizzopartenza: String(servicio || "").trim().toLowerCase(),
+            indirizzoarrivo: String(ruta || "").trim().toLowerCase()
           },
           tutor: monitora,
           autista: autistaMatch || { nickname: conductor },
@@ -181,7 +183,6 @@ if (!trattaMatch) {
             bloccoIncompleto: !isValid,
           },
         });
-        console.log("Nuova corsa:", newCorse.value[newCorse.value.length - 1]);
 
       });
     });
