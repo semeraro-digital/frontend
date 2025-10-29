@@ -19,6 +19,17 @@ const isAddingRow = ref(false);
 const isLoading = ref(false);
 const datafiltro = ref(moment());
 
+const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const daysOptions = [
+  { value: "MON", text: "Lunedì" },
+  { value: "TUE", text: "Martedì" },
+  { value: "WED", text: "Mercoledì" },
+  { value: "THU", text: "Giovedì" },
+  { value: "FRI", text: "Venerdì" },
+  { value: "SAT", text: "Sabato" },
+  { value: "SUN", text: "Domenica" },
+];
+
 const newCorsa = ref({
   datapartenza: datafiltro,
   orapartenza: "",
@@ -1060,23 +1071,23 @@ function getRowTooltip(flags) {
       <label>Tutor</label>
       <input type="text" v-model="newTrattaFromExcel.tutor" class="form-control" />
 
-      <label>Cadenza</label>
-      <Multiselect
-        v-model="newTrattaFromExcel.cadenza"
-        :options="[
-          { value: 'MON', text: 'Lunedì' },
-          { value: 'TUE', text: 'Martedì' },
-          { value: 'WED', text: 'Mercoledì' },
-          { value: 'THU', text: 'Giovedì' },
-          { value: 'FRI', text: 'Venerdì' },
-          { value: 'SAT', text: 'Sabato' },
-          { value: 'SUN', text: 'Domenica' }
-        ]"
-        mode="tags"
-        label="text"
-        track-by="value"
-        class="w-100"
-      />
+
+
+            <label class="form-label">{{ t("frequency") }}</label
+            ><br />
+            <div class="form-check form-check-inline">
+              <Multiselect
+                v-model="newTrattaFromExcel.cadenza"
+                :options="daysOptions"
+                mode="tags"
+                :close-on-select="false"
+                placeholder="Seleziona giorni"
+                label="text"
+                track-by="value"
+                class="w-100"
+              />
+            </div>
+
 
       <div class="d-flex justify-content-end gap-2 mt-3">
         <button class="btn btn-secondary" @click="isAddTrattaModalOpen = false">Annulla</button>
