@@ -194,6 +194,42 @@ if (!trattaMatch) {
   }
 }
 
+const isAddTrattaModalOpen = ref(false);
+const newTrattaFromExcel = ref({
+  descrizione: "",
+  indirizzopartenza: "",
+  indirizzoarrivo: "",
+  tutor: "",
+  ora: "",
+  cadenza: [],
+});
+function apriModaleNuovaTratta(item) {
+  const [partenza, arrivo] = (item.tratta.descrizione || "").split("->");
+  newTrattaFromExcel.value = {
+    descrizione: item.tratta.descrizione,
+    indirizzopartenza: partenza?.trim(),
+    indirizzoarrivo: arrivo?.trim(),
+    tutor: item.tutor,
+    ora: item.tratta.ora,
+    cadenza: [],
+  };
+  isAddTrattaModalOpen.value = true;
+}
+
+async function salvaNuovaTratta() {
+  try {
+    const request = {
+      ...newTrattaFromExcel.value,
+      cadenza: newTrattaFromExcel.value.cadenza.filter(Boolean).join(","),
+      ora: newTrattaFromExcel.value.ora,
+    };
+    await axios.post(`${API_BASE_URL}/tratte/aggiungiAll`, [request]);
+    await loadTratte(); // Ricarica tratte
+    isAddTrattaModalOpen.value = false;
+  } catch (err) {
+    console.error("Errore salvataggio tratta:", err);
+  }
+}
 
 // Upload da input
 const handleFileUpload = async (event) => {
@@ -899,6 +935,11 @@ function getRowTooltip(flags) {
                     <i class="fas fa-times"></i>
                   </button>
                 </td>
+                <td v-if="item.flags?.trattaNonRiconosciuta">
+                  <button class="btn btn-sm btn-outline-primary" @click="apriModaleNuovaTratta(item)">
+                    ➕
+                  </button>
+                </td>
               </tr>
 
         <!--fine -->
@@ -1001,6 +1042,52 @@ function getRowTooltip(flags) {
       </div>
     </div>
   </div>
+
+  <!-- MODALE AGGIUNGI TRATTA -->
+  <div v-if="isAddTrattaModalOpen" class="modal">
+    <div class="modal-content">
+      <h2>Nuova Tratta da Excel</h2>
+
+      <label>Partenza</label>
+      <input type="text" v-model="newTrattaFromExcel.indirizzopartenza" class="form-control" />
+
+      <label>Arrivo</label>
+      <input type="text" v-model="newTrattaFromExcel.indirizzoarrivo" class="form-control" />
+
+      <label>Ora</label>
+      <input type="text" v-model="newTrattaFromExcel.ora" class="form-control" />
+
+      <label>Tutor</label>
+      <input type="text" v-model="newTrattaFromExcel.tutor" class="form-control" />
+
+      <label>Cadenza</label>
+      <Multiselect
+        v-model="newTrattaFromExcel.cadenza"
+        :options="[
+          { value: 'MON', text: 'Lunedì' },
+          { value: 'TUE', text: 'Martedì' },
+          { value: 'WED', text: 'Mercoledì' },
+          { value: 'THU', text: 'Giovedì' },
+          { value: 'FRI', text: 'Venerdì' },
+          { value: 'SAT', text: 'Sabato' },
+          { value: 'SUN', text: 'Domenica' }
+        ]"
+        mode="tags"
+        label="text"
+        track-by="value"
+        class="w-100"
+      />
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button class="btn btn-secondary" @click="isAddTrattaModalOpen = false">Annulla</button>
+        <button class="btn btn-success" @click="salvaNuovaTratta">Salva</button>
+      </div>
+    </div>
+  </div>
+
+
+
+
 </template>
 
 <style scoped>
