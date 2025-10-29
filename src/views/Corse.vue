@@ -214,32 +214,53 @@ const newTrattaFromExcel = ref({
   ora: "",
   cadenza: [],
 });
-function apriModaleNuovaTratta(item) {
-  const [partenza, arrivo] = (item.tratta.descrizione || "").split("->");
-  newTrattaFromExcel.value = {
-    descrizione: item.tratta.descrizione,
-    indirizzopartenza: partenza?.trim(),
-    indirizzoarrivo: arrivo?.trim(),
-    tutor: item.tutor,
-    ora: item.tratta.ora,
-    cadenza: [],
-  };
-  isAddTrattaModalOpen.value = true;
+
+const indexRigaInModifica = ref(null);
+function apriModaleNuovaTratta(item, index) {
+indexRigaInModifica.value = index;
+const [partenza, arrivo] = (item.tratta.descrizione || '').split('->');
+newTrattaFromExcel.value = {
+descrizione: item.tratta.descrizione,
+indirizzopartenza: partenza?.trim(),
+indirizzoarrivo: arrivo?.trim(),
+tutor: item.tutor,
+ora: item.tratta.ora,
+cadenza: [],
+};
+isAddTrattaModalOpen.value = true;
 }
 
 async function salvaNuovaTratta() {
-  try {
-    const request = {
-      ...newTrattaFromExcel.value,
-      cadenza: newTrattaFromExcel.value.cadenza.filter(Boolean).join(","),
-      ora: newTrattaFromExcel.value.ora,
-    };
-    await axios.post(`${API_BASE_URL}/tratte/aggiungiAll`, [request]);
-    await loadTratte(); // Ricarica tratte
-    isAddTrattaModalOpen.value = false;
-  } catch (err) {
-    console.error("Errore salvataggio tratta:", err);
-  }
+try {
+const request = {
+...newTrattaFromExcel.value,
+cadenza: newTrattaFromExcel.value.cadenza.filter(Boolean).join(','),
+ora: newTrattaFromExcel.value.ora,
+};
+
+
+const response = await axios.post(`${API_BASE_URL}/tratte/aggiungiAll`, [request]);
+await loadTratte();
+
+
+// Cerca la tratta appena creata
+const match = tratte.value.find(t =>
+t.indirizzopartenza?.toLowerCase() === request.indirizzopartenza.toLowerCase() &&
+t.indirizzoarrivo?.toLowerCase() === request.indirizzoarrivo.toLowerCase()
+);
+
+
+// Rimpiazza la riga nel newCorse
+if (indexRigaInModifica.value != null && match) {
+newCorse.value[indexRigaInModifica.value].tratta = match;
+newCorse.value[indexRigaInModifica.value].flags.trattaNonRiconosciuta = false;
+}
+
+
+isAddTrattaModalOpen.value = false;
+} catch (err) {
+console.error("Errore salvataggio tratta:", err);
+}
 }
 
 // Upload da input
@@ -804,7 +825,7 @@ function getRowTooltip(flags) {
                     <i class="fa fa-plus"></i>
                   </button>
                 </th>
-                <th scope="col" class="text-right"></th>
+               <th scope="col" class="text-center">Azioni</th>
               </tr>
             </thead>
             <tbody class="small">
@@ -912,7 +933,8 @@ function getRowTooltip(flags) {
                 :class="{
                   'table-danger': item.flags?.bloccoIncompleto,
                   'table-warning': item.flags?.trattaNonRiconosciuta,
-                  'table-info': (item.flags?.autistaNonRiconosciuto || item.flags?.mezzoNonRiconosciuto) && !item.flags?.trattaNonRiconosciuta
+                  'table-info': (item.flags?.autistaNonRiconosciuto || item.flags?.mezzoNonRiconosciuto) && !item.flags?.trattaNonRiconosciuta,
+                  'table-success': !item.flags?.bloccoIncompleto && !item.flags?.trattaNonRiconosciuta && !item.flags?.autistaNonRiconosciuto && !item.flags?.mezzoNonRiconosciuto
                 }"
                 :title="getRowTooltip(item.flags)"
               >
@@ -946,11 +968,13 @@ function getRowTooltip(flags) {
                     <i class="fas fa-times"></i>
                   </button>
                 </td>
-                <td v-if="item.flags?.trattaNonRiconosciuta">
-                  <button class="btn btn-sm btn-outline-primary" @click="apriModaleNuovaTratta(item)">
-                    ➕
-                  </button>
-                </td>
+ <td class="text-center">
+ <button v-if="item.flags?.trattaNonRiconosciuta"
+ class="btn btn-sm btn-outline-primary"
+ @click="apriModaleNuovaTratta(item, index)">
+ ➕
+ </button>
+ </td>
               </tr>
 
         <!--fine -->
