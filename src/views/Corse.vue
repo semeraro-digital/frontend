@@ -166,7 +166,7 @@ if (!trattaMatch) {
 
         newCorse.value.push({
           tratta: trattaMatch || {
-            descrizione: ruta+"->"+servicio,
+            descrizione: servicio+"->"+ruta,
             ora: parsedTime,
             tutor: monitora,
             datapartenza: datafiltro.value,
