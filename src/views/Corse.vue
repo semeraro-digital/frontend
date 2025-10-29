@@ -113,12 +113,16 @@ const jsonData = jsonDataRaw.map((row) => {
 
     jsonData.forEach((row) => {
 
-const blockPrefixes = Object.keys(row)
-  .filter(k => k.toLowerCase().includes("hora"))
-  .map(k => {
-    const match = k.toLowerCase().match(/^(\d+)_?hora|hora(\d+)/);
-    return match?.[1] || match?.[2] || ""; // ritorna '2', '3', ecc. oppure ''
-  });
+const blockPrefixes = Array.from(
+  new Set(
+    Object.keys(row)
+      .filter(k => k.toLowerCase().includes("hora"))
+      .map(k => {
+        const match = k.toLowerCase().match(/^(\d+)_?hora|hora(\d+)/);
+        return match?.[1] || match?.[2] || "";
+      })
+  )
+);
 
       blockPrefixes.forEach((prefix) => {
         const hora = row[`${prefix}hora`];
