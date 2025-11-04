@@ -38,6 +38,7 @@ export default {
         dataFine: moment().add(1, "days").endOf("day").format("YYYY-MM-DDTHH:mm:ss"),
       },
       selectedDate: "today", // To help with filtering
+      globalLoading: false,
     };
   },
   mounted() {
@@ -169,6 +170,9 @@ export default {
 
     //whatsapp
     turniAutistaOggiWA() {
+      if (this.globalLoading) return;
+      this.globalLoading = true;
+
       if (isButtonDisabled.value) return; // Non fare nulla se è disabilitato
 
       isButtonDisabled.value = true; // Disabilita il bottone
@@ -209,6 +213,7 @@ export default {
         })
         .finally(() => {
           isButtonDisabled.value = false; // Riabilita il bottone dopo l'operazione
+          this.globalLoading = false; // Nasconde la rotellina
         });
     },
     turniAutistaDomaniWA() {
@@ -362,37 +367,6 @@ export default {
 
 <template>
   <div class="container-fluid">
-    <!--    <div class="row">-->
-    <!--      <div class="col-auto">-->
-    <!--        &lt;!&ndash;  <button type="button" class="btn btn-secondary mb-4" data-bs-toggle="modal" data-bs-target="#exampleModal">-->
-    <!--           Invia turni con data</button> &ndash;&gt;-->
-    <!--      </div>-->
-    <!--<div class="col-auto">
-      <button
-        id="liveToastBtn"
-        type="button"
-        class="btn btn-secondary mb-4"
-        @click="turniAutistaOggi"
-      >
-        {{ $t("inviaTurniOggi") }}
-      </button>
-    </div>
-    <div class="col-auto">
-      <button
-        id="liveToastBtnDmn"
-        type="button"
-        class="btn btn-secondary mb-4"
-        @click="turniAutistaDomani"
-      >
-        {{ $t("inviaTurniDomani") }}
-      </button>
-    </div>-->
-    <!--    </div>-->
-
-    <!--    <div class="row">-->
-    <!--      <div class="col-4"></div>-->
-    <!--    </div>-->
-
     <div class="row">
       <div class="col-lg-3">
         <div class="card border-left-primary shadow py-2 mb-4">
@@ -458,122 +432,18 @@ export default {
         </div>
       </div>
     </div>
+    <!-- Spinner centrale globale -->
+    <div
+      v-if="globalLoading"
+      class="position-fixed top-50 start-50 translate-middle d-flex flex-column align-items-center justify-content-center"
+      style="z-index: 2000; background: rgba(255,255,255,0.6); width: 100vw; height: 100vh;">
+      <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div class="mt-3 fw-bold text-dark">Invio in corso...</div>
+    </div>
+
     <div class="row">
-      <!--      <div class="col-2">-->
-      <!--        <div-->
-      <!--            class="card border-left-primary shadow py-2 mb-4"-->
-      <!--            role="button"-->
-      <!--            tabindex="0"-->
-      <!--            @click="turniAutistaOggi"-->
-      <!--            @keydown.enter="turniAutistaOggi"-->
-      <!--            style="cursor: pointer"-->
-      <!--            :class="{ 'disabled-card': isButtonDisabled }"-->
-      <!--        >-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-m font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  {{ $t("inviaTurni") }}-->
-      <!--                </div>-->
-      <!--                <div class="text-s text-muted">{{ $t("oggi") }}</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fas fa-envelope fa-3x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-
-      <!--        <div-->
-      <!--            class="card border-left-primary shadow py-2 mb-4"-->
-      <!--            role="button"-->
-      <!--            tabindex="0"-->
-      <!--            @click="turniAutistaDomani"-->
-      <!--            @keydown.enter="turniAutistaDomani"-->
-      <!--            style="cursor: pointer"-->
-      <!--            :class="{ 'disabled-card': isButtonDisabled }"-->
-      <!--        >-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-m font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  {{ $t("inviaTurni") }}-->
-      <!--                </div>-->
-      <!--                <div class="text-s text-muted">{{ $t("domani") }}</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fas fa-envelope fa-3x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-      <!--      </div>-->
-      <!--      <div class="col-2">-->
-      <!--        <div-->
-      <!--            class="card border-left-primary shadow py-2 mb-4"-->
-      <!--            role="button"-->
-      <!--            tabindex="0"-->
-      <!--            @click="turniAutistaOggiWA"-->
-      <!--            @keydown.enter="turniAutistaOggiWA"-->
-      <!--            style="cursor: pointer"-->
-      <!--            :class="{ 'disabled-card': isButtonDisabled }"-->
-      <!--        >-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-m font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  {{ $t("inviaTurni") }}-->
-      <!--                </div>-->
-      <!--                <div class="text-s text-muted">{{ $t("oggi") }}</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fab fa-whatsapp fa-3x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-
-      <!--        <div-->
-      <!--            class="card border-left-primary shadow py-2 mb-4"-->
-      <!--            role="button"-->
-      <!--            tabindex="0"-->
-      <!--            @click="turniAutistaDomaniWA"-->
-      <!--            @keydown.enter="turniAutistaDomaniWA"-->
-      <!--            style="cursor: pointer"-->
-      <!--            :class="{ 'disabled-card': isButtonDisabled }"-->
-      <!--        >-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-m font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  {{ $t("inviaTurni") }}-->
-      <!--                </div>-->
-      <!--                <div class="text-s text-muted">{{ $t("domani") }}</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fab fa-whatsapp fa-3x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-
-      <!--        <div class="card border-left-primary shadow py-2 mb-4">-->
-      <!--          <div class="card-body">-->
-      <!--            <div class="row no-gutters align-items-center">-->
-      <!--              <div class="col mr-2">-->
-      <!--                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">-->
-      <!--                  Le corse del ultimo mese-->
-      <!--                </div>-->
-      <!--                <div class="h5 mb-0 font-weight-bold text-gray-800">146</div>-->
-      <!--              </div>-->
-      <!--              <div class="col-auto">-->
-      <!--                <i class="fas fa-route fa-2x text-gray-300"></i>-->
-      <!--              </div>-->
-      <!--            </div>-->
-      <!--          </div>-->
-      <!--        </div>-->
-      <!--      </div>-->
-
       <div class="col-12">
         <!--turni oggi-->
         <div class="dashboard-section">
