@@ -1,5 +1,7 @@
 <!--#### pagina service  -->
 <script setup>
+import Multiselect from "@vueform/multiselect";
+import "@vueform/multiselect/themes/default.css";
 import moment from "moment";
 import "moment/locale/it";
 import axios from "axios";
@@ -192,6 +194,7 @@ if (!trattaMatch) {
             autistaNonRiconosciuto: !autistaMatch,
             mezzoNonRiconosciuto: !mezzoMatch,
             bloccoIncompleto: !isValid,
+            isExcel: true,
           },
         });
 
@@ -935,6 +938,7 @@ function getRowTooltip(flags) {
                   'table-warning': item.flags?.trattaNonRiconosciuta,
                   'table-info': (item.flags?.autistaNonRiconosciuto || item.flags?.mezzoNonRiconosciuto) && !item.flags?.trattaNonRiconosciuta,
                   'table-success': !item.flags?.bloccoIncompleto && !item.flags?.trattaNonRiconosciuta && !item.flags?.autistaNonRiconosciuto && !item.flags?.mezzoNonRiconosciuto
+                  && item.flags?.isExcel
                 }"
                 :title="getRowTooltip(item.flags)"
               >
@@ -1126,6 +1130,23 @@ function getRowTooltip(flags) {
 </template>
 
 <style scoped>
+:deep(.custom-table tbody tr.table-warning) {
+  background-color: #fff3cd !important;
+  color: #664d03;
+}
+:deep(.custom-table tbody tr.table-info) {
+  background-color: #cff4fc !important;
+  color: #055160;
+}
+:deep(.custom-table tbody tr.table-danger) {
+  background-color: #f8d7da !important;
+  color: #842029;
+}
+:deep(.custom-table tbody tr.table-success) {
+  background-color: #d7f7e6 !important;
+  color: #0f5132;
+}
+
 .container-fluid {
   margin-top: 20px;
 }

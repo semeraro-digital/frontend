@@ -346,7 +346,7 @@ const messages = {
     delete: "Eliminar",
     close: "Cerrar",
     noVehicles: "No hay vehículos disponibles",
-    confirmDelete: "¿Estás seguro de que quieres eliminar este vehículo?",
+    confirmDelete: "¿Estás seguro de que quieres eliminar esto?",
     errorLoadingVehicles: "Error al cargar los vehículos: {error}",
     
     successInsertion: "¡Tramo añadido con éxito!",
