@@ -208,6 +208,69 @@ if (!trattaMatch) {
   }
 }
 
+const isAddAutistaModalOpen = ref(false);
+const newAutistaFromExcel = ref({
+  nickname: "",
+  telefono: "",
+  email: ""
+});
+
+const indexRigaAutistaInModifica = ref(null);
+function apriModaleNuovoAutista(item, index) {
+  indexRigaAutistaInModifica.value = index;
+  newAutistaFromExcel.value = {
+    nickname: (item.autista?.nickname || "").trim(),
+    telefono: "",
+    email: ""
+  };
+  isAddAutistaModalOpen.value = true;
+}
+
+function ensureEsPrefix() {
+  let tel = (newAutistaFromExcel.value.telefono || "").trim();
+  if (!tel.startsWith("+34")) {
+    // togli eventuali ++, spazi, zeri iniziali
+    tel = tel.replace(/^\+*/, "").replace(/^0+/, "");
+    newAutistaFromExcel.value.telefono = "+34 " + tel;
+  }
+}
+
+function normalizeEsPhoneForSave() {
+  // compatta spazi, rimuove non-digit tranne +
+  let tel = (newAutistaFromExcel.value.telefono || "").replace(/[^\d+]/g, "");
+  if (!tel.startsWith("+34")) tel = "+34" + tel.replace(/^\+*/, "");
+  newAutistaFromExcel.value.telefono = tel;
+}
+
+async function salvaNuovoAutista() {
+  try {
+        normalizeEsPhoneForSave();
+    const response = await axios.post(`${API_BASE_URL}/autisti/aggiungi`, newAutistaFromExcel.value);
+
+    // Ricarica elenco autisti
+    await loadAutisti();
+
+    // Cerca l'autista appena creato (match per nickname, case-insensitive)
+    const match = autisti.value.find(a =>
+      (a.nickname || "").trim().toLowerCase() === newAutistaFromExcel.value.nickname.trim().toLowerCase()
+    );
+
+    // Rimpiazza nella riga Excel in modifica
+    if (indexRigaAutistaInModifica.value != null && match) {
+      // Mantieni anche la proiezione usata dal TypeAhead
+      match.fullName = match.nickname;
+      newCorse.value[indexRigaAutistaInModifica.value].autista = match;
+      newCorse.value[indexRigaAutistaInModifica.value].flags.autistaNonRiconosciuto = false;
+    }
+
+    isAddAutistaModalOpen.value = false;
+  } catch (err) {
+    console.error("Errore salvataggio autista:", err);
+    window.alert("Errore nel salvataggio dell'autista.");
+  }
+}
+
+
 const isAddTrattaModalOpen = ref(false);
 const newTrattaFromExcel = ref({
   descrizione: "",
@@ -217,6 +280,7 @@ const newTrattaFromExcel = ref({
   ora: "",
   cadenza: [],
 });
+
 
 const indexRigaInModifica = ref(null);
 function apriModaleNuovaTratta(item, index) {
@@ -650,9 +714,9 @@ const closeModal = () => {
 
 function getRowTooltip(flags) {
   const messages = [];
+  if (flags?.autistaNonRiconosciuto) messages.push("Autista non riconosciuto.");
   if (flags?.bloccoIncompleto) messages.push("Blocco incompleto: manca ora o tratta.");
   if (flags?.trattaNonRiconosciuta) messages.push("Tratta non riconosciuta.");
-  if (flags?.autistaNonRiconosciuto) messages.push("Autista non riconosciuto.");
   if (flags?.mezzoNonRiconosciuto) messages.push("Mezzo non riconosciuto.");
   return messages.join(" ");
 }
@@ -812,7 +876,7 @@ function getRowTooltip(flags) {
       <div class="col">
         <div v-if="!error && !isLoading">
           <table
-            class="table table-striped table-sm custom-table"
+            class="table table-sm custom-table"
             style="margin-top: 10px"
           >
             <thead class="thead-light">
@@ -934,9 +998,9 @@ function getRowTooltip(flags) {
                 v-for="(item, index) in newCorse"
                 :key="`new-${index}-${item.tratta?.descrizione || ''}-${item.tratta?.ora || ''}`"
                 :class="{
-                  'table-danger': item.flags?.bloccoIncompleto,
+                  'table-danger': item.flags?.bloccoIncompleto || item.flags?.autistaNonRiconosciuto,
                   'table-warning': item.flags?.trattaNonRiconosciuta,
-                  'table-info': (item.flags?.autistaNonRiconosciuto || item.flags?.mezzoNonRiconosciuto) && !item.flags?.trattaNonRiconosciuta,
+                  'table-info':  item.flags?.mezzoNonRiconosciuto,
                   'table-success': !item.flags?.bloccoIncompleto && !item.flags?.trattaNonRiconosciuta && !item.flags?.autistaNonRiconosciuto && !item.flags?.mezzoNonRiconosciuto
                   && item.flags?.isExcel
                 }"
@@ -973,6 +1037,15 @@ function getRowTooltip(flags) {
                   </button>
                 </td>
  <td class="text-center">
+ <button
+    v-if="item.flags?.autistaNonRiconosciuto"
+    class="btn btn-sm btn-outline-success"
+    @click="apriModaleNuovoAutista(item, index)"
+    title="Aggiungi autista"
+  >
+    ➕ Autista
+  </button>
+
  <button v-if="item.flags?.trattaNonRiconosciuta"
  class="btn btn-sm btn-outline-primary"
  @click="apriModaleNuovaTratta(item, index)">
@@ -1081,6 +1154,35 @@ function getRowTooltip(flags) {
       </div>
     </div>
   </div>
+
+<!-- MODALE AGGIUNGI AUTISTA -->
+<div v-if="isAddAutistaModalOpen" class="modal">
+  <div class="modal-content">
+    <h2>Nuovo Autista</h2>
+
+    <label>{{ item.nickname }}</label>
+    <input
+      type="text"
+      v-model="newAutistaFromExcel.nickname"
+      class="form-control"
+    />
+
+    <label class="mt-2">{{ item.telefono }}</label>
+    <input type="text" v-model="newAutistaFromExcel.telefono" class="form-control"
+     placeholder="+34 6XXXXXXXX o +34 7XXXXXXXX"
+      @input="ensureEsPrefix"
+      @blur="ensureEsPrefix"
+    />
+
+    <label class="mt-2">{{ item.email }}</label>
+    <input type="email" v-model="newAutistaFromExcel.email" class="form-control" />
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-secondary" @click="isAddAutistaModalOpen = false">Annulla</button>
+      <button class="btn btn-success" @click="salvaNuovoAutista">Salva</button>
+    </div>
+  </div>
+</div>
 
   <!-- MODALE AGGIUNGI TRATTA -->
   <div v-if="isAddTrattaModalOpen" class="modal">
