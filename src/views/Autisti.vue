@@ -289,7 +289,7 @@ const closeModal = () => {
               </tr>
               <tr v-for="(item, index) in newAutisti" :key="'new' + item.id">
           <td>{{ item.nomecognome }}</td>
-                <td>{{ item.nickname }}</td>
+                <td>Nickname</td>
                 <td>{{ formatDate(item.scadenzapatente) }}</td>
                  <td>{{ item.numpatente }}</td>
           <td>{{ item.email }}</td>
@@ -393,7 +393,7 @@ const closeModal = () => {
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>
-  <label for="nickname">{{ $t("driverLastName") }}</label>
+  <label for="nickname">Nickname</label>
       <input type="text" v-model="autistaModifica.nickname" placeholder="" />
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
