@@ -553,11 +553,22 @@ const aggiungiCorsa = async () => {
   if (isSaving.value) return; // evita doppi invii
   isSaving.value = true;
   try {
+
+   const missingAutistaTop =
+        isAddingRow.value && !newCorsa.value?.autista?.id && (newCorsa.value?.tratta?.id || newCorsa.value?.tratta?.descrizione);
+
+      const missingAutistaExcel = newCorse.value.some(nc =>
+        // la riga è potenzialmente “pronta” (ha una tratta) ma manca l'autista
+        (nc?.tratta?.id || nc?.tratta?.descrizione) && !nc?.autista?.id
+      );
+
+      if (missingAutistaTop || missingAutistaExcel) {
+        window.alert("Falta al menos un conductor en una o más filas. Selecciona el conductor antes de continuar.");
+        return;
+      }
+
     const request = createMassiveRequest();
     if (!request.length) {
-      // Alert invece dell'errore in pagina
-      // window.alert("Nessuna riga valida: seleziona almeno l'autista.");
-      // oppure in spagnolo:
       window.alert("Ninguna fila válida: selecciona al menos al conductor.");
       return;
     }
