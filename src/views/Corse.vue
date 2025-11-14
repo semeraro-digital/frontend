@@ -567,6 +567,7 @@ const aggiungiCorsa = async () => {
         return;
       }
 
+
     const request = createMassiveRequest();
     if (!request.length) {
       window.alert("Ninguna fila válida: selecciona al menos al conductor.");
@@ -1171,21 +1172,21 @@ function getRowTooltip(flags) {
   <div class="modal-content">
     <h2>Nuovo Autista</h2>
 
-    <label>{{ item.nickname }}</label>
+    <label>Nickname</label>
     <input
       type="text"
       v-model="newAutistaFromExcel.nickname"
       class="form-control"
     />
 
-    <label class="mt-2">{{ item.telefono }}</label>
+    <label class="mt-2">Teléfono</label>
     <input type="text" v-model="newAutistaFromExcel.telefono" class="form-control"
      placeholder="+34 6XXXXXXXX o +34 7XXXXXXXX"
       @input="ensureEsPrefix"
       @blur="ensureEsPrefix"
     />
 
-    <label class="mt-2">{{ item.email }}</label>
+    <label class="mt-2">Email</label>
     <input type="email" v-model="newAutistaFromExcel.email" class="form-control" />
 
     <div class="d-flex justify-content-end gap-2 mt-3">
