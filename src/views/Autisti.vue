@@ -289,7 +289,7 @@ const closeModal = () => {
               </tr>
               <tr v-for="(item, index) in newAutisti" :key="'new' + item.id">
           <td>{{ item.nomecognome }}</td>
-                <td>Nickname</td>
+                 <td>{{ item.nickname }}</td>
                 <td>{{ formatDate(item.scadenzapatente) }}</td>
                  <td>{{ item.numpatente }}</td>
           <td>{{ item.email }}</td>
